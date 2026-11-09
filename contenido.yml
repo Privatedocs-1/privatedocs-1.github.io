@@ -10,7 +10,7 @@ capitulo:
   pueblo: Aguada, Puerto Rico
   lema: Líderes de hoy, empresarios del mañana.
   foto_portada: ""
-  logo: ""
+  logo: fotos/fbla-logo-horizontal-color-hires-mw8svtty2i7.png
 unete:
   activo: false
   titulo: ¡Únete a FBLA!
@@ -83,6 +83,7 @@ contacto:
   instagram: https://www.instagram.com/fbla_dcg
   facebook: www.facebook.com/flcadcg
   tiktok: ""
+  fbla_connect: https://connect.fbla.org/
 instagram:
   publicaciones: []
   titulo: ""
