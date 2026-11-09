@@ -89,6 +89,14 @@ instagram:
   behold: https://feeds.behold.so/F9QJVJsOjOHNYke4Xg6r
   cantidad: "1"
 albumes:
+  - id: album-mw8s2ll5
+    titulo: FBLA Spirit Day
+    fecha: 6 de noviembre de 2026
+    lugar: Escuela Superior Dr. Carlos González
+    descripcion: Los estudiantes visten los colores azul y dorado de la organización estudiantil FBLA.
+    publicado: true
+    portada: ""
+    fotos: []
   - id: album-mw8rzoot
     titulo: Goofy Games Estatales FBLA 2026
     fecha: 5 de noviembre de 2026
