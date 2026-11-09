@@ -97,7 +97,7 @@
         { k: "lema", l: "Lema" },
         { k: "foto_portada", l: "Foto de portada (opcional)", tipo: "foto" },
         { k: "logo", l: "Logo (sale arriba a la izquierda)", tipo: "foto", recortar: true,
-          nota: "Usa solo el logo oficial de FBLA (fbla.org/brand-center), sin cambiarle colores. No uses el triángulo solo. Los márgenes blancos se recortan solos." }
+          nota: "Usa la versión BLANCA del logo oficial de FBLA (fbla.org/brand-center), en PNG con fondo transparente. No le cambies colores ni uses el triángulo solo. Los márgenes vacíos se recortan solos." }
       ] },
     { key: "sobre_nosotros", titulo: "ℹ️ Sobre nosotros", tipo: "objeto",
       ayuda: "Descripción del capítulo y los números grandes.",
@@ -866,11 +866,15 @@
     var ctx = c.getContext("2d");
     ctx.drawImage(img, 0, 0);
     var d = ctx.getImageData(0, 0, c.width, c.height).data;
+    // Si la imagen tiene transparencia, solo se recorta lo transparente
+    // (así un logo blanco no pierde sus partes blancas). Si no, se recorta el blanco.
+    var conTransparencia = false;
+    for (var k = 3; k < d.length; k += 4) { if (d[k] < 250) { conTransparencia = true; break; } }
     var x0 = c.width, y0 = c.height, x1 = -1, y1 = -1;
     for (var y = 0; y < c.height; y++) {
       for (var x = 0; x < c.width; x++) {
         var i = (y * c.width + x) * 4;
-        var vacio = d[i + 3] < 16 || (d[i] > 240 && d[i + 1] > 240 && d[i + 2] > 240);
+        var vacio = conTransparencia ? d[i + 3] < 16 : (d[i] > 240 && d[i + 1] > 240 && d[i + 2] > 240);
         if (!vacio) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
       }
     }
