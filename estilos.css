@@ -50,7 +50,9 @@ a { color: var(--blue); }
 /* Logo: usar la versión blanca oficial de FBLA (la barra es azul marino). */
 .marca__logo { height: 34px; width: auto; flex: none; }
 .marca--con-logo #marca-texto { font-size: .85rem; line-height: 1.2; padding-left: 10px; border-left: 2px solid rgba(255, 255, 255, .35); }
-.marca__linea { display: block; white-space: nowrap; }
+.marca { flex: 0 1 auto; overflow: hidden; }
+#marca-texto { min-width: 0; }
+.marca__linea { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .marca__linea--sub { font-weight: 400; opacity: .9; }
 .menu { display: flex; gap: 2px; align-items: center; }
 .menu a {
@@ -266,6 +268,10 @@ button.boton:disabled { opacity: .7; cursor: progress; transform: none; }
 
 @media (max-width: 760px) {
   .marca { font-size: 1rem; white-space: normal; }
+  .marca__logo { height: 28px; }
+  .marca--con-logo #marca-texto { font-size: .78rem; padding-left: 8px; }
+  .marca { gap: 8px; }
+  .menu-boton { padding: 6px 4px 6px 10px; }
   .evento { grid-template-columns: 1fr; }
   .evento__fecha { border-right: 0; border-bottom: 5px solid var(--gold); padding: 12px; }
   .seccion { padding: 56px 0; }
