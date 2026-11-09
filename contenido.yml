@@ -98,5 +98,5 @@ albumes:
     portada: ""
     fotos: []
 subidas:
-  activo: false
+  activo: true
   url: ""
