@@ -1,0 +1,163 @@
+# ==============================================================
+#   CONTENIDO DE LA PÁGINA WEB — FBLA Capítulo 3281
+#   Escuela Superior Dr. Carlos González
+# ==============================================================
+#
+#   LA FORMA FÁCIL: usa el Panel de edición (admin.html).
+#   Tiene formularios para añadir y eliminar todo sin tocar
+#   este archivo. Al guardar desde el panel, estas notas se
+#   reemplazan por una nota corta.
+#
+#   Si de todas formas quieres editar este archivo a mano:
+#
+#   REGLAS DE ORO (lee esto antes de editar):
+#   1. Cambia solo el texto que está DESPUÉS de los dos puntos ( : )
+#   2. Si el texto tiene comillas " ", deja las comillas.
+#   3. NO borres los espacios al principio de las líneas.
+#      Los espacios le dicen a la página qué va dentro de qué.
+#   4. Para AÑADIR algo a una lista (evento, anuncio, oficial...),
+#      copia un bloque completo que empiece con un guion ( - ),
+#      pégalo debajo y cambia el texto.
+#   5. Para QUITAR algo de una lista, borra su bloque completo.
+#   6. Las líneas que empiezan con # son notas como esta.
+#      La página no las muestra.
+#
+#   Si algo sale mal, la página te dirá en qué línea está el error.
+#   Lee GUIA.md para instrucciones paso a paso.
+# ==============================================================
+
+
+# ---------- INFORMACIÓN GENERAL ----------
+capitulo:
+  nombre: "FBLA Capítulo 3281"
+  escuela: "Escuela Superior Dr. Carlos González"
+  pueblo: "Aguada, Puerto Rico"
+  lema: "Líderes de hoy, empresarios del mañana."
+  # Foto grande de la portada (opcional). Sube la foto a la carpeta
+  # "fotos" y escribe su nombre aquí. Déjalo en "" para no usar foto.
+  foto_portada: ""
+  # Logo del capítulo (opcional). Igual que arriba.
+  logo: ""
+
+
+# (Los colores de la página son los oficiales de FBLA y ya están
+#  incluidos en el diseño. No hace falta cambiarlos.)
+
+
+# ---------- BOTÓN PARA UNIRSE ----------
+# Pega aquí el enlace de tu formulario (Google Forms, etc.)
+unete:
+  activo: true
+  titulo: "¡Únete a FBLA!"
+  texto: "¿Te interesan los negocios, el liderazgo o la tecnología? Forma parte de nuestro capítulo y compite a nivel estatal y nacional."
+  boton: "Llenar solicitud"
+  enlace: "https://forms.google.com/"
+
+
+# ---------- SOBRE NOSOTROS ----------
+sobre_nosotros:
+  titulo: "¿Quiénes somos?"
+  texto: >
+    Future Business Leaders of America (FBLA) es la organización
+    estudiantil de negocios más grande del mundo. En nuestro capítulo
+    desarrollamos destrezas de liderazgo, servicio comunitario y
+    preparación profesional a través de competencias, conferencias
+    y actividades durante todo el año escolar.
+  # Datos rápidos que aparecen como números grandes.
+  datos:
+    - numero: "45"
+      etiqueta: "Miembros"
+    - numero: "12"
+      etiqueta: "Premios estatales"
+    - numero: "300+"
+      etiqueta: "Horas de servicio"
+
+
+# ---------- ANUNCIOS ----------
+# Los anuncios aparecen en el orden en que los escribas.
+# Pon el más nuevo arriba.
+anuncios:
+  - titulo: "Reunión general de miembros"
+    fecha: "15 de noviembre de 2026"
+    texto: "Nos reunimos en el salón de Comercial a las 2:30 PM. ¡No faltes!"
+
+  - titulo: "Inscripciones abiertas para competencias"
+    fecha: "1 de noviembre de 2026"
+    texto: "Habla con nuestra consejera para escoger tu evento competitivo antes del 1 de diciembre."
+
+
+# ---------- EVENTOS / CALENDARIO ----------
+eventos:
+  - nombre: "Venta de dulces para recaudar fondos"
+    fecha: "20 de noviembre de 2026"
+    hora: "11:00 AM"
+    lugar: "Cafetería de la escuela"
+    descripcion: "Apoya a nuestro capítulo para ir a la conferencia estatal."
+
+  - nombre: "Conferencia Regional de Liderazgo"
+    fecha: "Enero 2027"
+    hora: ""
+    lugar: "Por anunciar"
+    descripcion: "Competencias regionales y talleres de liderazgo."
+
+  - nombre: "Conferencia Estatal (SLC)"
+    fecha: "Marzo 2027"
+    hora: ""
+    lugar: "Por anunciar"
+    descripcion: "Los ganadores regionales representan al capítulo a nivel estatal."
+
+
+# ---------- DIRECTIVA ----------
+# Para la foto: sube la foto a la carpeta "fotos" y escribe su nombre,
+# por ejemplo:  foto: "fotos/maria.jpg"
+# Si no hay foto, deja  foto: ""  y saldrán las iniciales.
+directiva:
+  - nombre: "Nombre Apellido"
+    puesto: "Presidente(a)"
+    foto: ""
+
+  - nombre: "Nombre Apellido"
+    puesto: "Vicepresidente(a)"
+    foto: ""
+
+  - nombre: "Nombre Apellido"
+    puesto: "Vicepresidenta de Mercadeo"
+    foto: ""
+
+  - nombre: "Nombre Apellido"
+    puesto: "Secretario(a)"
+    foto: ""
+
+  - nombre: "Nombre Apellido"
+    puesto: "Tesorero(a)"
+    foto: ""
+
+  - nombre: "Nombre Apellido"
+    puesto: "Consejero(a)"
+    foto: ""
+
+
+# ---------- LOGROS ----------
+logros:
+  - titulo: "1er lugar — Introduction to Business Communication"
+    detalle: "Conferencia Estatal 2026"
+
+  - titulo: "2do lugar — Social Media Strategies"
+    detalle: "Conferencia Regional 2026"
+
+
+# ---------- GALERÍA DE FOTOS ----------
+# Sube las fotos a la carpeta "fotos" y añádelas aquí.
+# Si la lista está vacía, la sección de galería no aparece.
+galeria:
+  # - foto: "fotos/conferencia.jpg"
+  #   descripcion: "Conferencia estatal 2026"
+
+
+# ---------- CONTACTO Y REDES SOCIALES ----------
+# Si no usan alguna red, déjala en "" y no aparecerá.
+contacto:
+  correo: "fbla3281@ejemplo.com"
+  instagram: "https://www.instagram.com/"
+  facebook: ""
+  tiktok: ""

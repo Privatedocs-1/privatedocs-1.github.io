@@ -1,0 +1,194 @@
+/* =============================================================
+   Estilos de la página. Colores OFICIALES de FBLA
+   (Brand Center: fbla.org/brand-center — "There are no exceptions").
+   No necesitas editar este archivo.
+   ============================================================= */
+
+:root {
+  --navy: #0a2e7f;
+  --blue: #1d52bc;
+  --gold: #f4ab19;
+  --cobalt: #226add;
+  --white: #ffffff;
+  --black: #2d2b2b;
+
+  --gris: #f3f5fa;
+  --borde: #dde3ef;
+  --texto-suave: #55607a;
+  --radio: 14px;
+  --sombra: 0 6px 20px rgba(10, 46, 127, 0.08);
+  /* Arial: tipografía alternativa oficial de FBLA para uso digital */
+  --letra: "Apercu Pro", Arial, "Helvetica Neue", Helvetica, sans-serif;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+body {
+  margin: 0;
+  font-family: var(--letra);
+  color: var(--black);
+  background: var(--white);
+  line-height: 1.6;
+}
+img { max-width: 100%; display: block; }
+h1, h2, h3 { line-height: 1.2; margin: 0 0 .5em; }
+a { color: var(--blue); }
+
+.contenedor { width: 100%; max-width: 1100px; margin: 0 auto; padding: 0 16px; }
+
+/* ---------- Barra superior ---------- */
+.barra {
+  position: sticky; top: 0; z-index: 10;
+  background: var(--navy);
+  border-bottom: 4px solid var(--gold);
+}
+.barra__fila { display: flex; align-items: center; justify-content: space-between; min-height: 64px; }
+.marca { display: flex; align-items: center; gap: 10px; color: var(--white); text-decoration: none; font-weight: 700; font-size: 1.15rem; }
+.marca__logo { height: 40px; width: auto; }
+.menu { display: flex; gap: 4px; }
+.menu a {
+  color: var(--white); text-decoration: none; font-weight: 700; font-size: .95rem;
+  padding: 8px 12px; border-radius: 8px;
+}
+.menu a:hover, .menu a:focus-visible { background: var(--blue); }
+.menu-boton {
+  display: none; background: none; border: 0; color: var(--white);
+  font-size: 1.6rem; cursor: pointer; padding: 6px 10px;
+}
+
+/* ---------- Portada ---------- */
+.portada {
+  background: linear-gradient(135deg, var(--navy) 0%, var(--blue) 100%);
+  background-size: cover; background-position: center;
+  color: var(--white);
+  padding: 96px 0 104px;
+  text-align: center;
+}
+.portada h1 { font-size: clamp(2.2rem, 6vw, 3.8rem); font-weight: 700; }
+.portada__escuela {
+  display: inline-block; margin: 0 0 18px;
+  color: var(--gold); font-weight: 700; letter-spacing: .06em; text-transform: uppercase; font-size: .9rem;
+}
+.portada__lema { font-size: clamp(1.1rem, 2.6vw, 1.4rem); margin: 0 auto 32px; max-width: 640px; opacity: .95; }
+
+/* ---------- Botones ---------- */
+.boton {
+  display: inline-block; text-decoration: none; font-weight: 700;
+  padding: 14px 28px; border-radius: 999px; transition: transform .15s, box-shadow .15s;
+}
+.boton:hover { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(0,0,0,.18); }
+.boton--acento { background: var(--gold); color: var(--navy); }
+.boton--borde { border: 2px solid var(--navy); color: var(--navy); background: var(--white); }
+.boton--borde:hover { background: var(--navy); color: var(--white); }
+
+/* ---------- Secciones ---------- */
+.seccion { padding: 72px 0; }
+.seccion--gris { background: var(--gris); }
+.seccion__titulo { font-size: clamp(1.7rem, 4vw, 2.3rem); color: var(--navy); position: relative; padding-bottom: 14px; margin-bottom: 32px; }
+.seccion__titulo::after {
+  content: ""; position: absolute; left: 0; bottom: 0;
+  width: 64px; height: 5px; border-radius: 3px; background: var(--gold);
+}
+.texto-grande { font-size: 1.15rem; max-width: 760px; margin: 0; }
+
+.datos { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-top: 36px; }
+.dato { background: var(--navy); color: var(--white); border-radius: var(--radio); padding: 24px; text-align: center; }
+.dato__numero { display: block; font-size: 2.4rem; font-weight: 700; color: var(--gold); }
+.dato__etiqueta { font-weight: 700; }
+
+.rejilla { display: grid; gap: 20px; }
+.rejilla--2 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+.tarjeta {
+  background: var(--white); border-radius: var(--radio); padding: 24px;
+  box-shadow: var(--sombra); border-top: 5px solid var(--cobalt);
+}
+.tarjeta h3 { color: var(--navy); font-size: 1.25rem; }
+.tarjeta p { margin: 0; }
+.etiqueta {
+  display: inline-block; background: var(--gold); color: var(--navy); font-weight: 700;
+  font-size: .8rem; padding: 3px 10px; border-radius: 999px; margin: 0 0 12px !important;
+}
+
+/* ---------- Eventos ---------- */
+.eventos { list-style: none; margin: 0; padding: 0; display: grid; gap: 16px; }
+.evento {
+  display: grid; grid-template-columns: 200px 1fr; border: 1px solid var(--borde);
+  border-radius: var(--radio); overflow: hidden; background: var(--white);
+}
+.evento__fecha {
+  background: var(--navy); color: var(--white); font-weight: 700;
+  display: flex; align-items: center; justify-content: center; text-align: center; padding: 20px;
+  border-right: 5px solid var(--gold);
+}
+.evento__info { padding: 20px 24px; }
+.evento__info h3 { color: var(--navy); font-size: 1.2rem; margin-bottom: 4px; }
+.evento__info p { margin: 4px 0 0; }
+.evento__meta { color: var(--blue); font-weight: 700; font-size: .95rem; }
+
+/* ---------- Directiva ---------- */
+.rejilla--personas { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); }
+.persona { text-align: center; background: var(--white); border-radius: var(--radio); padding: 24px 16px; box-shadow: var(--sombra); }
+.persona__foto {
+  width: 120px; height: 120px; border-radius: 50%; object-fit: cover;
+  margin: 0 auto 14px; border: 4px solid var(--gold);
+}
+.persona__foto--iniciales {
+  display: flex; align-items: center; justify-content: center;
+  background: var(--blue); color: var(--white); font-size: 2.2rem; font-weight: 700;
+}
+.persona h3 { font-size: 1.05rem; color: var(--navy); margin-bottom: 2px; }
+.persona__puesto { margin: 0; color: var(--texto-suave); font-size: .95rem; }
+
+/* ---------- Logros ---------- */
+.logros { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+.logro { display: flex; gap: 16px; align-items: flex-start; padding: 18px 20px; border-radius: var(--radio); background: var(--gris); }
+.logro__icono {
+  flex: none; width: 44px; height: 44px; border-radius: 50%;
+  background: var(--gold); color: var(--navy); font-size: 1.4rem;
+  display: flex; align-items: center; justify-content: center;
+}
+.logro h3 { font-size: 1.1rem; color: var(--navy); margin-bottom: 2px; }
+.logro p { margin: 0; color: var(--texto-suave); }
+
+/* ---------- Galería ---------- */
+.galeria { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+.galeria figure { margin: 0; background: var(--white); border-radius: var(--radio); overflow: hidden; box-shadow: var(--sombra); }
+.galeria img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
+.galeria figcaption { padding: 10px 14px; font-size: .95rem; }
+
+/* ---------- Únete ---------- */
+.unete { background: var(--navy); color: var(--white); text-align: center; }
+.unete__caja h2 { font-size: clamp(1.8rem, 4.5vw, 2.6rem); color: var(--gold); }
+.unete__caja p { max-width: 620px; margin: 0 auto 28px; font-size: 1.1rem; }
+
+/* ---------- Contacto ---------- */
+.contacto { display: flex; flex-wrap: wrap; gap: 12px; }
+.contacto .boton { overflow-wrap: anywhere; }
+
+/* ---------- Pie ---------- */
+.pie { background: var(--black); color: var(--white); padding: 28px 0; text-align: center; font-size: .9rem; }
+.pie p { margin: 4px 0; }
+.pie__nota { opacity: .7; }
+.pie__editar { color: var(--white); font-size: .8rem; }
+
+/* ---------- Mensajes ---------- */
+.cargando { text-align: center; padding: 120px 16px; color: var(--texto-suave); }
+.error { background: #fff4e0; border: 2px solid var(--gold); border-radius: var(--radio); padding: 28px; }
+.error h2 { color: var(--navy); }
+.error pre { background: var(--white); padding: 14px; border-radius: 8px; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* ---------- Celulares ---------- */
+@media (max-width: 760px) {
+  .menu-boton { display: block; }
+  .menu {
+    display: none; position: absolute; left: 0; right: 0; top: 100%;
+    flex-direction: column; background: var(--navy); padding: 8px 16px 16px;
+    border-bottom: 4px solid var(--gold);
+  }
+  .menu--abierto { display: flex; }
+  .menu a { padding: 12px; }
+  .evento { grid-template-columns: 1fr; }
+  .evento__fecha { border-right: 0; border-bottom: 5px solid var(--gold); padding: 12px; }
+  .seccion { padding: 56px 0; }
+  .portada { padding: 72px 0 80px; }
+}
