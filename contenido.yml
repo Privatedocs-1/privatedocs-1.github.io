@@ -23,13 +23,7 @@ sobre_nosotros:
   datos:
     - numero: "232"
       etiqueta: Miembros Activos
-anuncios:
-  - titulo: Reunión general de miembros
-    fecha: 15 de noviembre de 2026
-    texto: Nos reunimos en el salón de Comercial a las 2:30 PM. ¡No faltes!
-  - titulo: Inscripciones abiertas para competencias
-    fecha: 1 de noviembre de 2026
-    texto: Habla con nuestra consejera para escoger tu evento competitivo antes del 1 de diciembre.
+anuncios: []
 eventos:
   - nombre: Eventos Competitivos FBLA 2026
     fecha: 11 de diciembre de 2026
