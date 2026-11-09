@@ -66,6 +66,8 @@
         { k: "url", l: "Enlace del script de Google (termina en /exec)", ph: "https://script.google.com/macros/s/.../exec",
           nota: "Lo obtienes una sola vez al instalar el script. Las instrucciones están en GUIA.md." }
       ] },
+    { key: "_visitas", titulo: "📊 Visitas", tipo: "visitas",
+      ayuda: "Cuántas personas visitan la página. Cada navegador cuenta una vez por día (recargar no suma). No se guardan datos personales ni se usan cookies." },
     { key: "directiva", titulo: "👥 Directiva", tipo: "lista", item: "oficial",
       ayuda: "Oficiales del capítulo y consejero(a). Si no hay foto, se muestran las iniciales.",
       campos: [
@@ -410,6 +412,7 @@
       ]));
     }
     if (s.tipo === "albumes") return pintarAlbumes(panel, s);
+    if (s.tipo === "visitas") return pintarVisitas(panel, s);
 
     panel.appendChild(el("h2", { texto: s.titulo }));
     panel.appendChild(el("p", { class: "ayuda", texto: s.ayuda }));
@@ -926,6 +929,85 @@
     panel.appendChild(rejilla);
   }
 
+  // ---------- Visitas ----------
+  var visitasCache = null;
+
+  function pintarVisitas(panel, s) {
+    panel.appendChild(el("h2", { texto: s.titulo }));
+    panel.appendChild(el("p", { class: "ayuda", texto: s.ayuda }));
+    var zona = el("div");
+    panel.appendChild(el("button", { class: "btn btn--azul", type: "button", style: "margin-bottom:16px",
+      onclick: function () { cargarVisitas(zona); } }, ["🔄 Actualizar"]));
+    panel.appendChild(zona);
+    if (visitasCache) dibujarVisitas(zona, visitasCache);
+    else cargarVisitas(zona);
+  }
+
+  function cargarVisitas(zona) {
+    zona.innerHTML = "";
+    zona.appendChild(el("div", { class: "vacio", texto: "Cargando visitas…" }));
+    script("visitas").then(function (r) {
+      visitasCache = r;
+      dibujarVisitas(zona, r);
+    }).catch(function (e) {
+      zona.innerHTML = "";
+      zona.appendChild(el("div", { class: "vacio", texto: e.message }));
+    });
+  }
+
+  function dibujarVisitas(zona, r) {
+    zona.innerHTML = "";
+    var v = r.visitas || { total: 0, dias: {}, paginas: {} };
+    var hoy = FX.deISO(r.hoy) || new Date();
+    function dia(offset) { var d = new Date(hoy); d.setDate(d.getDate() - offset); return FX.aISO(d); }
+    function suma(n) { var t = 0; for (var i = 0; i < n; i++) t += v.dias[dia(i)] || 0; return t; }
+
+    if (!v.total) {
+      zona.appendChild(el("div", { class: "vacio", texto: "Todavía no hay visitas registradas. El conteo empieza desde que se instaló la versión nueva del script." }));
+      return;
+    }
+    var tarjetas = el("div", { class: "visitas-tarjetas" });
+    [["Hoy", v.dias[dia(0)] || 0], ["Últimos 7 días", suma(7)], ["Últimos 30 días", suma(30)], ["Total", v.total]].forEach(function (x) {
+      tarjetas.appendChild(el("div", { class: "visitas-tarjeta" }, [
+        el("span", { class: "visitas-tarjeta__num", texto: String(x[1]) }),
+        el("span", { class: "visitas-tarjeta__txt", texto: x[0] })
+      ]));
+    });
+    zona.appendChild(tarjetas);
+
+    // Gráfica de los últimos 30 días
+    zona.appendChild(el("h3", { class: "subtitulo", style: "margin:24px 0 10px", texto: "Visitas por día (últimos 30 días)" }));
+    var max = 1, valores = [];
+    for (var i = 29; i >= 0; i--) { var n = v.dias[dia(i)] || 0; valores.push([dia(i), n]); if (n > max) max = n; }
+    var grafica = el("div", { class: "grafica", role: "img", "aria-label": "Gráfica de visitas por día" });
+    valores.forEach(function (x) {
+      var d = FX.deISO(x[0]);
+      var etiqueta = d.getDate() + " " + FX.MESES_CORTOS[d.getMonth()];
+      grafica.appendChild(el("div", { class: "grafica__col", title: etiqueta + ": " + x[1] + (x[1] === 1 ? " visita" : " visitas") }, [
+        el("span", { class: "grafica__num", texto: x[1] ? String(x[1]) : "" }),
+        el("div", { class: "grafica__barra", style: "height:" + Math.max(2, Math.round(x[1] / max * 120)) + "px" }),
+        el("span", { class: "grafica__dia", texto: d.getDate() === 1 || x === valores[0] || x === valores[valores.length - 1] ? etiqueta : String(d.getDate()) })
+      ]));
+    });
+    zona.appendChild(grafica);
+
+    // Páginas y álbumes más vistos
+    var nombres = { inicio: "🏠 Página principal", subir: "📤 Enviar fotos" };
+    (datos.albumes || []).forEach(function (a) { if (a && a.id) nombres["album:" + a.id] = "📸 " + (a.titulo || "Álbum"); });
+    var pags = Object.keys(v.paginas || {}).sort(function (a, b) { return v.paginas[b] - v.paginas[a]; });
+    if (pags.length) {
+      zona.appendChild(el("h3", { class: "subtitulo", style: "margin:24px 0 10px", texto: "Lo más visto" }));
+      var tabla = el("table", { class: "tabla-visitas" });
+      tabla.appendChild(el("thead", null, [el("tr", null, [el("th", { texto: "Página" }), el("th", { texto: "Visitas" })])]));
+      var cuerpo = el("tbody");
+      pags.forEach(function (p) {
+        cuerpo.appendChild(el("tr", null, [el("td", { texto: nombres[p] || (p.indexOf("album:") === 0 ? "📸 Álbum eliminado" : p) }), el("td", { texto: String(v.paginas[p]) })]));
+      });
+      tabla.appendChild(cuerpo);
+      zona.appendChild(tabla);
+    }
+  }
+
   // ---------- Fotos de miembros ----------
   function pintarMiembros(panel) {
     var paginaSubir = location.origin + location.pathname.replace(/admin(\.html)?$/i, "") + "subir.html";
@@ -1155,7 +1237,7 @@
   function contenidoLimpio() {
     var salida = {};
     Object.keys(datos).forEach(function (k) { salida[k] = datos[k]; });
-    SECCIONES.forEach(function (s) { salida[s.key] = limpiar(s, datos[s.key]); });
+    SECCIONES.forEach(function (s) { if (s.campos) salida[s.key] = limpiar(s, datos[s.key]); });
     return salida;
   }
 

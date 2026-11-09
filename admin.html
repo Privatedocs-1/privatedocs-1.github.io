@@ -110,6 +110,22 @@
     .btn--rojo { color: var(--rojo); }
     .aviso--info { background: #eaf1fd; border-color: var(--cobalt); overflow-wrap: anywhere; }
 
+    /* Visitas */
+    .visitas-tarjetas { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+    .visitas-tarjeta { background: var(--navy); color: var(--white); border-radius: var(--radio); padding: 16px; text-align: center; border-bottom: 4px solid var(--gold); }
+    .visitas-tarjeta__num { display: block; font-size: 2rem; font-weight: 700; color: var(--gold); font-variant-numeric: tabular-nums; }
+    .visitas-tarjeta__txt { font-weight: 700; font-size: .9rem; }
+    .grafica { display: flex; align-items: flex-end; gap: 3px; height: 170px; padding: 8px; background: var(--gris); border-radius: var(--radio); overflow-x: auto; }
+    .grafica__col { flex: 1 0 18px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 3px; height: 100%; }
+    .grafica__barra { width: 100%; background: var(--blue); border-radius: 4px 4px 0 0; }
+    .grafica__col:hover .grafica__barra { background: var(--gold); }
+    .grafica__num { font-size: .68rem; color: var(--navy); font-weight: 700; }
+    .grafica__dia { font-size: .62rem; color: var(--suave); white-space: nowrap; }
+    .tabla-visitas { width: 100%; border-collapse: collapse; }
+    .tabla-visitas th, .tabla-visitas td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--borde); }
+    .tabla-visitas td:last-child, .tabla-visitas th:last-child { text-align: right; font-variant-numeric: tabular-nums; }
+    .tabla-visitas th { color: var(--navy); font-size: .9rem; }
+
     /* Fecha de eventos */
     .tipos-fecha { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
     .tipo-fecha { border: 1.5px solid var(--borde); background: var(--white); color: var(--navy); font-weight: 700; padding: 8px 14px; border-radius: 999px; cursor: pointer; }
@@ -228,6 +244,6 @@
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js" integrity="sha512-CSBhVREyzHAjAFfBlIBakjoRUKp5h7VSweP0InR/pAJyptH7peuhCsqAI/snV+TwZmXZqoUklpXp6R6wMnYf5Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="fechas.js?v=2"></script>
-  <script src="admin.js?v=12"></script>
+  <script src="admin.js?v=13"></script>
 </body>
 </html>

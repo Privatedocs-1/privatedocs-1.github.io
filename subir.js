@@ -69,6 +69,13 @@
     albumes = (d.albumes || []).filter(function (a) { return a && a.id && a.publicado === true && a.recibe_fotos !== false; });
     if (d.capitulo && d.capitulo.nombre) $("marca-texto").textContent = d.capitulo.nombre;
 
+    // Conteo de visitas (una vez por día en este navegador; sin datos personales)
+    if (url) {
+      var hoy = new Date().toISOString().slice(0, 10), clave = "fbla3281-visita-subir", visto = null;
+      try { visto = localStorage.getItem(clave); localStorage.setItem(clave, hoy); } catch (e) {}
+      if (visto !== hoy) { try { fetch(url + "?accion=visita&p=subir", { mode: "no-cors", keepalive: true }); } catch (e) {} }
+    }
+
     if (s.activo !== true || !url || !albumes.length) {
       $("cerrado").hidden = false;
       return;

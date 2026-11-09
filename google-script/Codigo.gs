@@ -1,6 +1,6 @@
 /**
  * =============================================================
- *  FBLA 3281 — Recibir fotos de miembros
+ *  FBLA 3281 — Recibir fotos de miembros y contar visitas
  *  Este script vive en Google Apps Script (script.google.com).
  *  Guarda las fotos que envían los miembros en una carpeta
  *  PRIVADA de Google Drive hasta que el admin las aprueba en el
@@ -24,8 +24,46 @@ var NOMBRE_CARPETA = 'FBLA 3281 - Fotos de miembros';
 var MAX_PENDIENTES = 300;                     // límite de fotos esperando aprobación
 
 function doGet(e) {
+  var p = (e && e.parameter) || {};
+  if (p.accion === 'visita') {
+    registrarVisita(p.p);
+    return salida({ ok: true });
+  }
   var codigo = PropertiesService.getScriptProperties().getProperty('CODIGO_MIEMBROS');
   return salida({ ok: true, servicio: 'Fotos de FBLA 3281', pideCodigo: !!(codigo && codigo.trim()) });
+}
+
+// ---------- Conteo de visitas (sin cookies ni datos personales) ----------
+// Se guarda: total, visitas por día (último año) y visitas por página.
+function registrarVisita(pagina) {
+  pagina = String(pagina || 'inicio').replace(/[^\w:\-]/g, '').slice(0, 60) || 'inicio';
+  var lock = LockService.getScriptLock();
+  if (!lock.tryLock(5000)) return;
+  try {
+    var props = PropertiesService.getScriptProperties();
+    var v = leerVisitas(props);
+    var hoy = Utilities.formatDate(new Date(), 'America/Puerto_Rico', 'yyyy-MM-dd');
+    if (pagina === 'inicio') {
+      v.total = (v.total || 0) + 1;
+      v.dias[hoy] = (v.dias[hoy] || 0) + 1;
+    }
+    v.paginas[pagina] = (v.paginas[pagina] || 0) + 1;
+    // Guardar solo los últimos 400 días y las 60 páginas más vistas
+    var dias = Object.keys(v.dias).sort();
+    while (dias.length > 400) delete v.dias[dias.shift()];
+    var pags = Object.keys(v.paginas).sort(function (a, b) { return v.paginas[b] - v.paginas[a]; });
+    pags.slice(60).forEach(function (k) { delete v.paginas[k]; });
+    props.setProperty('VISITAS', JSON.stringify(v));
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function leerVisitas(props) {
+  var v = {};
+  try { v = JSON.parse(props.getProperty('VISITAS') || '{}'); } catch (e) {}
+  v.total = v.total || 0; v.dias = v.dias || {}; v.paginas = v.paginas || {};
+  return v;
 }
 
 function doPost(e) {
@@ -39,6 +77,8 @@ function doPost(e) {
       if (d.accion === 'pendientes') r = pendientes();
       else if (d.accion === 'foto') r = foto(d.id);
       else if (d.accion === 'resolver') r = resolver(d.id, d.aprobar === true);
+      else if (d.accion === 'visitas') r = { visitas: leerVisitas(PropertiesService.getScriptProperties()),
+        hoy: Utilities.formatDate(new Date(), 'America/Puerto_Rico', 'yyyy-MM-dd') };
       else throw new Error('Acción desconocida.');
     }
     r = r || {};

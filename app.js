@@ -78,6 +78,18 @@
     return s.activo === true && /^https:\/\/script\.google\.com\//.test(String(s.url || ""));
   }
 
+  // ---------- Conteo de visitas ----------
+  // Avisa al script de Google; cuenta una vez por día por página en cada navegador.
+  // No usa cookies ni guarda datos personales.
+  function registrarVisita(pagina) {
+    var url = String((DATOS.subidas || {}).url || "").trim();
+    if (!/^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/.test(url)) return;
+    var hoy = new Date().toISOString().slice(0, 10);
+    var clave = "fbla3281-visita-" + pagina;
+    try { if (localStorage.getItem(clave) === hoy) return; localStorage.setItem(clave, hoy); } catch (e) {}
+    try { fetch(url + "?accion=visita&p=" + encodeURIComponent(pagina), { mode: "no-cors", keepalive: true }); } catch (e) {}
+  }
+
   // ¿Este álbum acepta fotos de miembros? (activado por defecto)
   function albumRecibeFotos(a) {
     return subidasActivas() && a && a.id && a.publicado === true && a.recibe_fotos !== false;
@@ -108,17 +120,33 @@
 
     // ---- Portada ----
     var fondo = cap.foto_portada
-      ? ' style="background-image:linear-gradient(rgba(5,20,45,.72),rgba(5,20,45,.72)),url(\'' + t(enlaceSeguro(cap.foto_portada)) + '\')"'
+      ? ' style="background-image:linear-gradient(115deg,rgba(10,46,127,.92),rgba(29,82,188,.78)),url(\'' + t(enlaceSeguro(cap.foto_portada)) + '\')"'
       : "";
+    var partes = String(cap.nombre || "FBLA").split(/\s+[-–—]\s+/);
+    var lema = String(cap.lema || "").split("|").map(function (x) { return x.trim(); }).filter(Boolean);
+    var prox = proximoEvento(lista(d.eventos));
+    var hayFotos = albumesPublicados().length > 0;
     html +=
       '<section id="inicio" class="portada"' + fondo + '>' +
-      '<div class="contenedor portada__contenido">' +
+      '<div class="portada__formas" aria-hidden="true"><span></span><span></span><span></span></div>' +
+      '<div class="contenedor portada__rejilla">' +
+      '<div class="portada__texto">' +
       '<p class="portada__escuela">' + t(cap.escuela) + (cap.pueblo ? " · " + t(cap.pueblo) : "") + "</p>" +
-      "<h1>" + t(cap.nombre) + "</h1>" +
-      '<p class="portada__lema">' + t(cap.lema) + "</p>" +
-      (unirseActivo
-        ? '<a class="boton boton--acento" href="' + t(enlaceSeguro(unete.enlace)) + '" target="_blank" rel="noopener">' + t(unete.boton || "Únete") + "</a>"
+      '<h1 class="portada__titulo">' + t(partes[0]) +
+      (partes.length > 1 ? '<span class="portada__sub">' + t(partes.slice(1).join(" - ")) + "</span>" : "") + "</h1>" +
+      (lema.length > 1
+        ? '<ul class="portada__lema" aria-label="Lema">' + lema.map(function (x) { return "<li>" + t(x) + "</li>"; }).join("") + "</ul>"
+        : (cap.lema ? '<p class="portada__lema-texto">' + t(cap.lema) + "</p>" : "")) +
+      (prox
+        ? '<a class="portada__proximo" href="#eventos"><span class="portada__proximo-et">Próximo evento</span>' +
+          '<strong>' + t(prox.ev.nombre) + '</strong><span class="portada__proximo-cuando">' + t(F.texto(prox.ev)) + " · " + t(prox.cuando) + "</span></a>"
         : "") +
+      '<div class="portada__botones">' +
+      (unirseActivo ? '<a class="boton boton--acento" href="' + t(enlaceSeguro(unete.enlace)) + '" target="_blank" rel="noopener">' + t(unete.boton || "Únete") + "</a>" : "") +
+      '<a class="boton ' + (unirseActivo ? "boton--claro" : "boton--acento") + '" href="#eventos">📅 Ver eventos</a>' +
+      (hayFotos ? '<a class="boton boton--claro" href="#albumes">📸 Ver fotos</a>' : "") +
+      "</div></div>" +
+      '<div class="portada__emblema"><img src="img/emblema-512.png" alt="Emblema de FBLA: Service, Education, Progress" width="512" height="512"></div>' +
       "</div></section>";
 
     // ---- Sobre nosotros ----
@@ -241,6 +269,7 @@
     if (feed || fijas.length) mostrarInstagram(feed, fijas, cantidadInstagram(ig.cantidad));
     iniciarCuentaRegresiva();
     revisarRuta();
+    registrarVisita("inicio");
   }
 
   // ---------- Eventos y cuenta regresiva ----------
@@ -286,6 +315,20 @@
         enVivo +
         "</div></li>";
     }).join("") + "</ol>";
+  }
+
+  // Próximo evento con fecha exacta (para la portada).
+  function proximoEvento(eventos) {
+    var ahora = new Date(), mejor = null;
+    eventos.forEach(function (e) {
+      var st = F.estado(e, ahora);
+      if (st.tipo === "encurso") { if (!mejor || !mejor.encurso) mejor = { ev: e, encurso: true, cuando: "¡En curso!", orden: -1 }; return; }
+      if (st.tipo !== "futuro" && st.tipo !== "manana" && st.tipo !== "hoy") return;
+      var orden = st.tipo === "hoy" ? 0 : st.dias;
+      var cuando = st.tipo === "hoy" ? "¡Es hoy!" : st.tipo === "manana" ? "¡Es mañana!" : "Faltan " + st.dias + " días";
+      if (!mejor || (!mejor.encurso && orden < mejor.orden)) mejor = { ev: e, cuando: cuando, orden: orden };
+    });
+    return mejor;
   }
 
   var relojTimer = null;
@@ -361,7 +404,39 @@
     ultimasPublicaciones(feed).then(pintar, function () { pintar(fijas); });
   }
 
+  // Instagram decide la altura de cada tarjeta (los reels son más altos).
+  // Para que la fila quede pareja, todas se recortan a la altura de la más baja.
+  var igualarTimer = null;
+  function igualarInstagram() {
+    clearInterval(igualarTimer);
+    var vueltas = 0;
+    var ajustar = function () {
+      var posts = [].slice.call(document.querySelectorAll("#instagram-posts .instagram__post"));
+      var alturas = posts.map(function (p) {
+        var f = p.querySelector("iframe");
+        return f ? f.getBoundingClientRect().height : 0;
+      });
+      var listas = alturas.filter(function (h) { return h > 300; });
+      var enFila = window.innerWidth > 760 && posts.length > 1;
+      posts.forEach(function (p) {
+        p.style.height = "";
+        p.classList.remove("instagram__post--igual");
+      });
+      if (enFila && listas.length === posts.length) {
+        var min = Math.min.apply(null, listas);
+        posts.forEach(function (p) {
+          p.style.height = Math.round(min) + "px";
+          p.classList.add("instagram__post--igual");
+        });
+      }
+      if (++vueltas > 40) clearInterval(igualarTimer);
+    };
+    igualarTimer = setInterval(ajustar, 500);
+    window.addEventListener("resize", ajustar);
+  }
+
   function cargarInstagram() {
+    igualarInstagram();
     if (window.instgrm) { window.instgrm.Embeds.process(); return; }
     var s = document.createElement("script");
     s.async = true;
@@ -395,6 +470,7 @@
     if (!vista) scrollAntes = window.scrollY;
     if (vista) vista.remove();
     fotosAbiertas = fotosDe(a);
+    registrarVisita("album:" + a.id);
     var meta = [a.fecha, a.lugar].filter(Boolean).map(t).join(" · ");
     vista = document.createElement("div");
     vista.className = "album-vista";
