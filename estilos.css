@@ -272,11 +272,21 @@ button.boton:disabled { opacity: .7; cursor: progress; transform: none; }
 .visor__pie { grid-column: 1 / -1; grid-row: 2; display: flex; justify-content: center; align-items: center; gap: 16px; padding: 12px 16px 20px; color: var(--white); }
 
 /* ---------- Instagram ---------- */
-.instagram { display: grid; grid-template-columns: repeat(auto-fill, minmax(326px, 1fr)); gap: 20px; align-items: start; }
-.instagram__post { min-width: 0; position: relative; }
-.instagram__post iframe { max-width: 100% !important; }
-/* Tarjetas igualadas: se recorta lo de abajo de las más altas */
-.instagram__post--igual { overflow: hidden; border-radius: 3px; border-bottom: 1px solid #dbdbdb; background: var(--white); }
+/* Todas las tarjetas de una fila miden lo mismo (la del más alto); nada se recorta. */
+.instagram { display: grid; grid-template-columns: repeat(auto-fill, minmax(326px, 1fr)); gap: 20px; align-items: stretch; }
+.instagram__post {
+  min-width: 0; position: relative; display: flex; flex-direction: column;
+  background: var(--white); border: 1px solid #dbdbdb; border-radius: 12px; overflow: hidden; box-shadow: var(--sombra);
+}
+.instagram__marco { flex: 1 1 auto; }
+/* Más ancho para que el encabezado de Instagram ("View profile") no se corte */
+#instagram .contenedor { max-width: 1300px; }
+.instagram__post iframe { max-width: 100% !important; border: 0 !important; border-radius: 0 !important; box-shadow: none !important; }
+.instagram__ver {
+  display: block; text-align: center; font-weight: 700; text-decoration: none; color: var(--navy);
+  padding: 12px; border-top: 1px solid #dbdbdb; background: var(--gris);
+}
+.instagram__ver:hover, .instagram__ver:focus-visible { background: var(--gold); }
 .instagram__post .instagram-media { margin: 0 !important; min-width: 0 !important; width: 100% !important; }
 .instagram__mas { text-align: center; margin: 28px 0 0; }
 

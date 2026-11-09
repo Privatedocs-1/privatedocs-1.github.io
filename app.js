@@ -399,9 +399,12 @@
         if (sec) sec.querySelector(".instagram").innerHTML = "";
         return;
       }
+      // Cada publicación va en un marco; todos los marcos de la fila miden lo mismo
+      // y el botón de abajo queda alineado (nada se recorta).
       cont.innerHTML = enlaces.slice(0, cantidad).map(function (url) {
-        return '<div class="instagram__post"><blockquote class="instagram-media" data-instgrm-permalink="' + t(url) +
-          '?utm_source=ig_embed" data-instgrm-version="14"><a href="' + t(url) + '" target="_blank" rel="noopener">Ver esta publicación en Instagram</a></blockquote></div>';
+        return '<div class="instagram__post"><div class="instagram__marco"><blockquote class="instagram-media" data-instgrm-permalink="' + t(url) +
+          '?utm_source=ig_embed" data-instgrm-version="14"><a href="' + t(url) + '" target="_blank" rel="noopener">Ver esta publicación en Instagram</a></blockquote></div>' +
+          '<a class="instagram__ver" href="' + t(url) + '" target="_blank" rel="noopener">Ver en Instagram ↗</a></div>';
       }).join("");
       cargarInstagram();
     };
@@ -409,39 +412,7 @@
     ultimasPublicaciones(feed).then(pintar, function () { pintar(fijas); });
   }
 
-  // Instagram decide la altura de cada tarjeta (los reels son más altos).
-  // Para que la fila quede pareja, todas se recortan a la altura de la más baja.
-  var igualarTimer = null;
-  function igualarInstagram() {
-    clearInterval(igualarTimer);
-    var vueltas = 0;
-    var ajustar = function () {
-      var posts = [].slice.call(document.querySelectorAll("#instagram-posts .instagram__post"));
-      var alturas = posts.map(function (p) {
-        var f = p.querySelector("iframe");
-        return f ? f.getBoundingClientRect().height : 0;
-      });
-      var listas = alturas.filter(function (h) { return h > 300; });
-      var enFila = window.innerWidth > 760 && posts.length > 1;
-      posts.forEach(function (p) {
-        p.style.height = "";
-        p.classList.remove("instagram__post--igual");
-      });
-      if (enFila && listas.length === posts.length) {
-        var min = Math.min.apply(null, listas);
-        posts.forEach(function (p) {
-          p.style.height = Math.round(min) + "px";
-          p.classList.add("instagram__post--igual");
-        });
-      }
-      if (++vueltas > 40) clearInterval(igualarTimer);
-    };
-    igualarTimer = setInterval(ajustar, 500);
-    window.addEventListener("resize", ajustar);
-  }
-
   function cargarInstagram() {
-    igualarInstagram();
     if (window.instgrm) { window.instgrm.Embeds.process(); return; }
     var s = document.createElement("script");
     s.async = true;
