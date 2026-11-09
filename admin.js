@@ -1232,6 +1232,7 @@
     }
     var rejilla = el("div", { class: "fotos-panel" });
     var portada = portadaDe(a);
+    var otrosAlbumes = (datos.albumes || []).filter(function (x) { return x && x !== a && x.id; });
     fotos.forEach(function (f, i) {
       var desc = el("input", { type: "text", placeholder: "Descripción (opcional)", "aria-label": "Descripción de la foto " + (i + 1) });
       desc.value = f.descripcion || "";
@@ -1260,6 +1261,13 @@
             onclick: function () { fotos.splice(i - 1, 0, fotos.splice(i, 1)[0]); marcarCambio(); pintar(); } }, ["←"]),
           el("button", { class: "btn btn--icono", type: "button", "aria-label": "Mover después", disabled: i === fotos.length - 1,
             onclick: function () { fotos.splice(i + 1, 0, fotos.splice(i, 1)[0]); marcarCambio(); pintar(); } }, ["→"]),
+          otrosAlbumes.length ? el("button", { class: "btn btn--icono", type: "button", title: "Mover a otro álbum", "aria-expanded": "false",
+            onclick: function (e) {
+              var caja = e.currentTarget.closest(".foto-p").querySelector(".foto-p__mover");
+              caja.hidden = !caja.hidden;
+              e.currentTarget.setAttribute("aria-expanded", caja.hidden ? "false" : "true");
+              if (!caja.hidden) caja.querySelector("select").focus();
+            } }, ["↪ Mover"]) : null,
           el("button", { class: "btn btn--icono btn--rojo", type: "button", "aria-label": "Eliminar foto",
             onclick: function () {
               if (!confirm("¿Eliminar esta foto del álbum?")) return;
@@ -1267,10 +1275,33 @@
               if (a.portada === f.foto) a.portada = "";
               marcarCambio(); pintar();
             } }, ["🗑"])
-        ])
+        ]),
+        otrosAlbumes.length ? moverFotoCaja(a, f) : null
       ]));
     });
     panel.appendChild(rejilla);
+  }
+
+  // Selector para pasar una foto a otro álbum (conserva descripción y autor).
+  function moverFotoCaja(origen, f) {
+    var sel = el("select", { "aria-label": "Álbum de destino" });
+    sel.appendChild(el("option", { value: "", texto: "— Mover a… —" }));
+    (datos.albumes || []).forEach(function (x) {
+      if (x && x !== origen && x.id) sel.appendChild(el("option", { value: x.id, texto: (x.titulo || "(sin nombre)") + (x.publicado ? "" : " (borrador)") }));
+    });
+    sel.addEventListener("change", function () {
+      var destino = (datos.albumes || []).filter(function (x) { return x.id === sel.value; })[0];
+      if (!destino) return;
+      var lista = fotosDe(origen), pos = lista.indexOf(f);
+      if (pos < 0) return;
+      lista.splice(pos, 1);
+      if (origen.portada === f.foto) origen.portada = "";
+      fotosDe(destino).push(f);
+      marcarCambio();
+      pintar();
+      avisar("Foto movida a «" + (destino.titulo || "álbum") + "». Recuerda «Guardar cambios».");
+    });
+    return el("div", { class: "foto-p__mover", hidden: true }, [sel]);
   }
 
   // ---------- 🏠 Inicio (tablero) ----------
