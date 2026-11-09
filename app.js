@@ -84,9 +84,14 @@
   function registrarVisita(pagina) {
     var url = String((DATOS.subidas || {}).url || "").trim();
     if (!/^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/.test(url)) return;
+    if (!/\.github\.io$/i.test(location.hostname)) return;          // pruebas locales no cuentan
     var hoy = new Date().toISOString().slice(0, 10);
     var clave = "fbla3281-visita-" + pagina;
-    try { if (localStorage.getItem(clave) === hoy) return; localStorage.setItem(clave, hoy); } catch (e) {}
+    try {
+      if (localStorage.getItem("fbla3281-admin") === "1") return;   // los administradores no cuentan
+      if (localStorage.getItem(clave) === hoy) return;               // una vez por día por navegador
+      localStorage.setItem(clave, hoy);
+    } catch (e) {}
     try { fetch(url + "?accion=visita&p=" + encodeURIComponent(pagina), { mode: "no-cors", keepalive: true }); } catch (e) {}
   }
 

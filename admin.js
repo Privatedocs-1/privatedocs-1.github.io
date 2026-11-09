@@ -289,6 +289,8 @@
 
   // ---------- Entrar / salir ----------
   function iniciar() {
+    // Este navegador es de un administrador: sus visitas a la página no se cuentan.
+    try { localStorage.setItem("fbla3281-admin", "1"); } catch (e) {}
     var g = ls(CLAVE_LS);
     var adiv = adivinarRepo();
     $("owner").value = CONFIG.owner || (g && g.owner) || adiv.owner;
