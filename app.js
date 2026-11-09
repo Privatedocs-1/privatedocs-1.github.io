@@ -86,7 +86,9 @@
     if (cap.logo) {
       var logo = document.getElementById("logo");
       logo.src = enlaceSeguro(cap.logo);
+      logo.alt = "FBLA";
       logo.hidden = false;
+      document.querySelector(".marca").classList.add("marca--con-logo");
     }
 
     var html = "";

@@ -96,8 +96,8 @@
         { k: "pueblo", l: "Pueblo" },
         { k: "lema", l: "Lema" },
         { k: "foto_portada", l: "Foto de portada (opcional)", tipo: "foto" },
-        { k: "logo", l: "Logo (opcional)", tipo: "foto",
-          nota: "Usa solo el logo oficial de FBLA para capítulos (fbla.org/brand-center). No uses el triángulo solo." }
+        { k: "logo", l: "Logo (sale arriba a la izquierda)", tipo: "foto", recortar: true,
+          nota: "Usa solo el logo oficial de FBLA (fbla.org/brand-center), sin cambiarle colores. No uses el triángulo solo. Los márgenes blancos se recortan solos." }
       ] },
     { key: "sobre_nosotros", titulo: "ℹ️ Sobre nosotros", tipo: "objeto",
       ayuda: "Descripción del capítulo y los números grandes.",
@@ -555,7 +555,7 @@
       archivo.addEventListener("change", function () {
         if (!archivo.files[0]) return;
         ocupado("Preparando foto…");
-        prepararFoto(archivo.files[0], "fotos").then(function (r) {
+        prepararFoto(archivo.files[0], "fotos", { recortar: c.recortar }).then(function (r) {
           obj[c.k] = r;
           marcarCambio();
           dibujar();
@@ -859,19 +859,43 @@
     return base + "-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5) + "." + ext;
   }
 
-  function prepararImagen(file) {
+  // Calcula el área con contenido (sin márgenes blancos o transparentes).
+  function areaConContenido(img) {
+    var c = document.createElement("canvas");
+    c.width = img.naturalWidth; c.height = img.naturalHeight;
+    var ctx = c.getContext("2d");
+    ctx.drawImage(img, 0, 0);
+    var d = ctx.getImageData(0, 0, c.width, c.height).data;
+    var x0 = c.width, y0 = c.height, x1 = -1, y1 = -1;
+    for (var y = 0; y < c.height; y++) {
+      for (var x = 0; x < c.width; x++) {
+        var i = (y * c.width + x) * 4;
+        var vacio = d[i + 3] < 16 || (d[i] > 240 && d[i + 1] > 240 && d[i + 2] > 240);
+        if (!vacio) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+      }
+    }
+    if (x1 < 0) return { x: 0, y: 0, w: c.width, h: c.height };
+    var m = Math.round(Math.max(x1 - x0, y1 - y0) * 0.02);   // pequeño margen
+    x0 = Math.max(0, x0 - m); y0 = Math.max(0, y0 - m);
+    x1 = Math.min(c.width - 1, x1 + m); y1 = Math.min(c.height - 1, y1 + m);
+    return { x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 };
+  }
+
+  function prepararImagen(file, opciones) {
+    opciones = opciones || {};
     return new Promise(function (ok, mal) {
       var url = URL.createObjectURL(file);
       var img = new Image();
       img.onload = function () {
-        var s = Math.min(1, MAX_LADO / Math.max(img.naturalWidth, img.naturalHeight));
+        var a = opciones.recortar ? areaConContenido(img) : { x: 0, y: 0, w: img.naturalWidth, h: img.naturalHeight };
+        var s = Math.min(1, MAX_LADO / Math.max(a.w, a.h));
         var c = document.createElement("canvas");
-        c.width = Math.round(img.naturalWidth * s);
-        c.height = Math.round(img.naturalHeight * s);
+        c.width = Math.round(a.w * s);
+        c.height = Math.round(a.h * s);
         var png = file.type === "image/png";
         var ctx = c.getContext("2d");
         if (!png) { ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, c.width, c.height); }
-        ctx.drawImage(img, 0, 0, c.width, c.height);
+        ctx.drawImage(img, a.x, a.y, a.w, a.h, 0, 0, c.width, c.height);
         URL.revokeObjectURL(url);
         ok({ dataUrl: c.toDataURL(png ? "image/png" : "image/jpeg", 0.85), ext: png ? "png" : "jpg" });
       };
@@ -884,8 +908,8 @@
   }
 
   // Prepara la foto y la deja lista para subir al guardar. Devuelve su ruta.
-  function prepararFoto(file, carpeta) {
-    return prepararImagen(file).then(function (img) {
+  function prepararFoto(file, carpeta, opciones) {
+    return prepararImagen(file, opciones).then(function (img) {
       var ruta = carpeta + "/" + nombreSeguro(file.name, img.ext);
       vistas[ruta] = img.dataUrl;
       porSubir[ruta] = img.dataUrl.split(",")[1];
