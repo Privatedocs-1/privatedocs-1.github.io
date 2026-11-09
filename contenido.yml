@@ -126,7 +126,10 @@ albumes:
     descripcion: ""
     publicado: true
     portada: ""
-    fotos: []
+    fotos:
+      - foto: fotos/albumes/album-mw8qehnp/171476-mw8wmim2l6s.webp
+        descripcion: ""
+        autor: Yadiel Lorenzo
     recibe_fotos: true
   - id: album-mw8s2ll5
     titulo: FBLA Spirit Day
