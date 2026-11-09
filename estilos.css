@@ -172,6 +172,12 @@ a { color: var(--blue); }
 .evento--proximo { border: 2px solid var(--gold); box-shadow: 0 8px 24px rgba(10, 46, 127, .12); }
 .evento__etiqueta { margin: 0 0 4px !important; font-size: .78rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--blue); }
 .evento__cuenta { margin-top: 10px !important; }
+.evento__compartir {
+  margin-top: 12px; border: 1.5px solid var(--navy); background: var(--white); color: var(--navy);
+  font: inherit; font-weight: 700; font-size: .9rem; padding: 7px 14px; border-radius: 999px; cursor: pointer;
+}
+.evento__compartir:hover, .evento__compartir:focus-visible { background: var(--navy); color: var(--white); }
+.evento__compartir:disabled { opacity: .6; cursor: progress; }
 .cuenta { display: inline-block; font-weight: 700; font-size: .9rem; padding: 4px 12px; border-radius: 999px; }
 .cuenta--futuro { background: var(--gris); color: var(--navy); border: 1px solid var(--borde); }
 .cuenta--pronto { background: var(--gold); color: var(--navy); }
@@ -216,6 +222,23 @@ a { color: var(--blue); }
 .galeria figure { margin: 0; background: var(--white); border-radius: var(--radio); overflow: hidden; box-shadow: var(--sombra); }
 .galeria img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
 .galeria figcaption { padding: 10px 14px; font-size: .95rem; }
+
+/* ---------- Logros por año académico ---------- */
+.logros-anios { display: grid; gap: 14px; }
+.logros-anio { border: 1.5px solid var(--borde); border-radius: var(--radio); background: var(--white); overflow: hidden; }
+.logros-anio summary {
+  list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 16px 20px; background: var(--navy); color: var(--white); font-weight: 700;
+}
+.logros-anio summary::-webkit-details-marker { display: none; }
+.logros-anio summary::after { content: "▾"; margin-left: auto; color: var(--gold); font-size: 1.2rem; transition: transform .2s; }
+.logros-anio:not([open]) summary::after { transform: rotate(-90deg); }
+.logros-anio summary:hover, .logros-anio summary:focus-visible { background: var(--blue); }
+.logros-anio__nombre { font-size: 1.1rem; }
+.logros-anio__actual { background: var(--gold); color: var(--navy); font-size: .75rem; padding: 3px 10px; border-radius: 999px; }
+.logros-anio__n { font-size: .85rem; font-weight: 400; opacity: .85; }
+.logros-anio .logros { padding: 16px; }
+.logro__comp { color: var(--blue) !important; font-weight: 700; font-size: .92rem; }
 
 /* ---------- Álbumes ---------- */
 .albumes { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px; }

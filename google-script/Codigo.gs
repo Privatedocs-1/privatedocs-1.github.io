@@ -1,6 +1,7 @@
 /**
  * =============================================================
- *  FBLA 3281 — Recibir fotos de miembros y contar visitas
+ *  FBLA 3281 — Fotos de miembros, conteo de visitas y
+ *  sugerencias de eventos/logros desde Instagram
  *  Este script vive en Google Apps Script (script.google.com).
  *  Guarda las fotos que envían los miembros en una carpeta
  *  PRIVADA de Google Drive hasta que el admin las aprueba en el
@@ -27,6 +28,8 @@ function doGet(e) {
   var p = (e && e.parameter) || {};
   if (p.accion === 'visita') {
     registrarVisita(p.p);
+    // Aprovecha las visitas para revisar Instagram una vez al día.
+    try { revisarInstagramSiToca(false); } catch (err) {}
     return salida({ ok: true });
   }
   var codigo = PropertiesService.getScriptProperties().getProperty('CODIGO_MIEMBROS');
@@ -79,6 +82,8 @@ function doPost(e) {
       else if (d.accion === 'resolver') r = resolver(d.id, d.aprobar === true);
       else if (d.accion === 'visitas') r = { visitas: leerVisitas(PropertiesService.getScriptProperties()),
         hoy: Utilities.formatDate(new Date(), 'America/Puerto_Rico', 'yyyy-MM-dd') };
+      else if (d.accion === 'sugerencias') r = listarSugerencias(d.forzar === true);
+      else if (d.accion === 'resolverSugerencia') r = resolverSugerencia(d.id);
       else throw new Error('Acción desconocida.');
     }
     r = r || {};
@@ -205,6 +210,215 @@ function resolver(id, aprobar) {
   var f = archivoPendiente(id);
   f.setTrashed(true);
   return { aprobada: aprobar };
+}
+
+// =============================================================
+//  Sugerencias desde Instagram (eventos y logros)
+//  Una vez al día lee las publicaciones nuevas del feed de Behold
+//  (el mismo que usa la página) y propone eventos y logros.
+//  El admin las revisa, edita y aprueba en el panel.
+// =============================================================
+var PAGINA = 'https://fbladcg.github.io/';
+var ARCHIVO_SUGERENCIAS = 'sugerencias-instagram.json';
+var MESES_ES = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+
+function leerSugerencias() {
+  var it = carpeta().getFilesByName(ARCHIVO_SUGERENCIAS);
+  var estado = { vistos: {}, pendientes: [], ultima: 0 };
+  if (it.hasNext()) {
+    try { estado = JSON.parse(it.next().getBlob().getDataAsString('UTF-8')); } catch (e) {}
+  }
+  estado.vistos = estado.vistos || {}; estado.pendientes = estado.pendientes || []; estado.ultima = estado.ultima || 0;
+  return estado;
+}
+
+function guardarSugerencias(estado) {
+  // Solo se recuerdan las últimas 300 publicaciones vistas y 40 sugerencias pendientes.
+  var ids = Object.keys(estado.vistos).sort(function (a, b) { return estado.vistos[a] - estado.vistos[b]; });
+  while (ids.length > 300) delete estado.vistos[ids.shift()];
+  estado.pendientes = estado.pendientes.slice(-40);
+  var texto = JSON.stringify(estado);
+  var it = carpeta().getFilesByName(ARCHIVO_SUGERENCIAS);
+  if (it.hasNext()) it.next().setContent(texto);
+  else carpeta().createFile(ARCHIVO_SUGERENCIAS, texto, 'application/json');
+}
+
+function revisarInstagramSiToca(forzar) {
+  var lock = LockService.getScriptLock();
+  if (!lock.tryLock(10000)) return { revisado: false };
+  try {
+    var estado = leerSugerencias();
+    if (!forzar && Date.now() - estado.ultima < 20 * 3600 * 1000) return { revisado: false };
+    estado.ultima = Date.now();
+    var r = revisarInstagram(estado);
+    guardarSugerencias(estado);
+    return r;
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+function revisarInstagram(estado) {
+  var yml = UrlFetchApp.fetch(PAGINA + 'contenido.yml?x=' + Date.now(), { muteHttpExceptions: true }).getContentText('UTF-8');
+  var m = /behold:\s*"?(https:\/\/feeds\.behold\.so\/[\w-]+)/.exec(yml);
+  if (!m) return { revisado: true, nuevas: 0, aviso: 'No hay feed de Behold configurado en el panel (📷 Instagram).' };
+  var feed = JSON.parse(UrlFetchApp.fetch(m[1], { muteHttpExceptions: true }).getContentText('UTF-8'));
+  var posts = Array.isArray(feed) ? feed : (feed.posts || []);
+  var existente = normalizar(yml);
+  var nuevas = 0;
+  posts.forEach(function (p) {
+    if (!p || !p.id || estado.vistos[p.id]) return;
+    estado.vistos[p.id] = Date.now();
+    analizarPublicacion(p, existente).forEach(function (s) { estado.pendientes.push(s); nuevas++; });
+  });
+  return { revisado: true, nuevas: nuevas };
+}
+
+function normalizar(t) {
+  return String(t || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
+}
+
+function sinAdornos(t) {
+  return String(t || '')
+    .replace(/[\p{Extended_Pictographic}️‍⃣]/gu, '')
+    .replace(/[#@][\w.áéíóúñÁÉÍÓÚÑ]+/g, '')
+    .replace(/[ \t]+/g, ' ')
+    .trim();
+}
+
+// Primera línea con texto, limpia y corta.
+function tituloDe(texto) {
+  var lineas = sinAdornos(texto).split(/\n+/).map(function (l) { return l.trim(); }).filter(function (l) { return l.length > 3; });
+  var t = lineas[0] || 'Publicación de Instagram';
+  t = t.replace(/^[¡!.,:\-–\s]+/, '¡').replace(/^¡(?=[^!]*$)/, '');
+  if (t.length > 110) t = t.slice(0, 107).replace(/\s+\S*$/, '') + '…';
+  return t;
+}
+
+function iso(d) { return Utilities.formatDate(d, 'America/Puerto_Rico', 'yyyy-MM-dd'); }
+
+// Busca la fecha de un evento en el texto (relativa a la fecha de la publicación).
+function buscarFecha(texto, base) {
+  var t = normalizar(texto);
+  var M = '(' + MESES_ES.join('|') + ')';
+  var y0 = base.getFullYear();
+  function armar(d, mes, y) {
+    var anio = y ? +y : y0;
+    var f = new Date(anio, mes, d);
+    if (!y && f < new Date(base.getFullYear(), base.getMonth(), base.getDate() - 2)) f = new Date(anio + 1, mes, d);
+    return f;
+  }
+  var m;
+  if ((m = new RegExp('(\\d{1,2}) (?:al|a|y) (\\d{1,2}) de ' + M + '(?: de (\\d{4}))?').exec(t))) {
+    var mi = MESES_ES.indexOf(m[3]);
+    var a = armar(+m[1], mi, m[4]), b = new Date(a.getFullYear(), mi, +m[2]);
+    return { tipo_fecha: 'rango', inicio: iso(a), fin: iso(b), fecha: a };
+  }
+  if ((m = new RegExp('(\\d{1,2}) de ' + M + '(?: de (\\d{4}))?').exec(t))) {
+    var f = armar(+m[1], MESES_ES.indexOf(m[2]), m[3]);
+    return { tipo_fecha: 'dia', inicio: iso(f), fecha: f };
+  }
+  if ((m = new RegExp('(?:en|durante|mes de) ' + M + '(?: de (\\d{4}))?').exec(t))) {
+    var mes = MESES_ES.indexOf(m[1]);
+    var y = m[2] ? +m[2] : (mes < base.getMonth() ? y0 + 1 : y0);
+    return { tipo_fecha: 'mes', mes: y + '-' + ('0' + (mes + 1)).slice(-2), fecha: new Date(y, mes, 28) };
+  }
+  return null;
+}
+
+function analizarPublicacion(p, existente) {
+  var texto = String(p.caption || '');
+  if (!texto.trim()) return [];
+  var base = new Date(p.timestamp || Date.now());
+  var hoy = new Date(); hoy.setHours(0, 0, 0, 0);
+  var titulo = tituloDe(texto);
+  var imagen = (p.sizes && p.sizes.small && p.sizes.small.mediaUrl) || p.thumbnailUrl || p.mediaUrl || '';
+  var post = { permalink: p.permalink || '', fecha: p.timestamp || '', texto: texto.slice(0, 700), imagen: imagen };
+  var res = [];
+
+  var norm = normalizar(texto);
+  // FBLA premia hasta el Top 10: 1er..10mo lugar, en número o en palabra.
+  var LUGAR = '(?:(?:[1-9]|10) ?(?:er|ro|do|to|vo|mo|no|o)?|primer|primero|segundo|tercer|tercero|cuarto|quinto|sexto|septimo|octavo|noveno|decimo) lugar';
+  var esLogro = new RegExp('(felicit|reconoc|premi|ganador|ganamos|gano|ganaron|' + LUGAR + '|top ?10|top ?diez|champion|campeon|medalla|trofeo|member of the month|miembro del mes|distincion|honor|se destaca|nos destacamos|logramos|clasific|finalista)').test(norm);
+  var competencia = buscarCompetencia(norm);
+  if ((esLogro || competencia) && existente.indexOf(normalizar(titulo).slice(0, 30)) < 0) {
+    var cuando = MESES_ES[base.getMonth()];
+    var lugar = new RegExp(LUGAR).exec(norm);
+    res.push({ id: p.id + '-logro', tipo: 'logro', titulo: titulo, competencia: competencia,
+      detalle: (lugar ? lugar[0].replace(/\b\w/, function (c) { return c.toUpperCase(); }) + ' · ' : '') +
+        cuando.charAt(0).toUpperCase() + cuando.slice(1) + ' ' + base.getFullYear(),
+      anio_academico: base.getMonth() >= 7 ? base.getFullYear() + '-' + (base.getFullYear() + 1) : (base.getFullYear() - 1) + '-' + base.getFullYear(),
+      post: post });
+  }
+
+  var f = buscarFecha(texto, base);
+  var pareceEvento = /(nos vemos|se acerca|proxim|invit|particip|reunion|actividad|evento|conferencia|competenc|taller|venta|feria|celebr|day|semana|casa abierta|registr|ponte|no faltes|te esperamos|acompan|fecha)/.test(normalizar(texto));
+  if (f && pareceEvento && f.fecha >= hoy) {
+    var hora = /(\d{1,2}(?::\d{2})?\s*(?:a\.?\s?m\.?|p\.?\s?m\.?))/i.exec(texto);
+    var ev = { id: p.id + '-evento', tipo: 'evento', nombre: titulo, tipo_fecha: f.tipo_fecha,
+      hora: hora ? hora[1].replace(/\s+/g, ' ').toUpperCase().replace(/\./g, '') : '', lugar: '', descripcion: '', post: post };
+    if (f.inicio) ev.inicio = f.inicio;
+    if (f.fin) ev.fin = f.fin;
+    if (f.mes) ev.mes = f.mes;
+    res.push(ev);
+  }
+  return res;
+}
+
+// Eventos competitivos oficiales de FBLA (High School 2026-2027). Igual que competencias.js.
+var COMPETENCIAS = ["Accounting", "Advanced Accounting", "Advertising", "Agribusiness", "Banking & Financial Systems",
+  "Broadcast Journalism", "Business Communication", "Business Ethics", "Business Law", "Business Management",
+  "Business Plan", "Career Portfolio", "Coding & Programming", "Community Service Project", "Computer Applications",
+  "Computer Game & Simulation Programming", "Computer Problem Solving", "Customer Service", "Cybersecurity",
+  "Data Analysis", "Data Science & AI", "Digital Animation", "Digital Video Production", "Economics",
+  "Entrepreneurship", "Event Planning", "Financial Planning", "Financial Statement Analysis",
+  "Future Business Educator", "Future Business Leader", "Graphic Design", "Healthcare Administration",
+  "Hospitality & Event Management", "Human Resource Management", "Impromptu Speaking",
+  "Insurance & Risk Management", "International Business", "Introduction to Business Communication",
+  "Introduction to Business Concepts", "Introduction to Business Presentation", "Introduction to Business Procedures",
+  "Introduction to FBLA", "Introduction to Information Technology", "Introduction to Marketing Concepts",
+  "Introduction to Parliamentary Procedure", "Introduction to Programming", "Introduction to Public Speaking",
+  "Introduction to Retail & Merchandising", "Introduction to Social Media Strategy",
+  "Introduction to Supply Chain Management", "Job Interview", "Journalism", "Local Chapter Annual Business Report",
+  "Management Information Systems", "Marketing", "Mobile Application Development", "Network Design",
+  "Networking Infrastructures", "Organizational Leadership", "Parliamentary Procedure", "Personal Finance",
+  "Project Management", "Public Administration & Management", "Public Service Announcement", "Public Speaking",
+  "Real Estate", "Retail Management", "Sales Presentation", "Securities & Investments", "Social Media Strategies",
+  "Sports & Entertainment Management", "Supply Chain Management", "Technology Support & Services", "Visual Design",
+  "Website Coding & Development", "Website Design"];
+
+// Devuelve el nombre de la competencia mencionada (la más larga que coincida), o "".
+function buscarCompetencia(textoNormalizado) {
+  var mejor = '';
+  COMPETENCIAS.forEach(function (c) {
+    var n = normalizar(c.replace(/&/g, 'and'));
+    var n2 = normalizar(c.replace(/&/g, ''));
+    var t = ' ' + textoNormalizado.replace(/\band\b/g, 'and') + ' ';
+    if ((t.indexOf(' ' + n + ' ') >= 0 || t.indexOf(' ' + n2 + ' ') >= 0) && c.length > mejor.length) mejor = c;
+  });
+  // "Marketing" o "Economics" solos son muy comunes: solo cuentan si se habla de competir o de un lugar.
+  if (['Marketing', 'Economics', 'Journalism', 'Accounting', 'Advertising', 'Cybersecurity', 'Entrepreneurship'].indexOf(mejor) >= 0 &&
+      !/(lugar|compet|evento competitivo|slc|nlc|conferencia|regional|estatal|nacional)/.test(textoNormalizado)) return '';
+  return mejor;
+}
+
+function listarSugerencias(forzar) {
+  var r = revisarInstagramSiToca(forzar) || {};
+  var estado = leerSugerencias();
+  return { sugerencias: estado.pendientes, ultima: estado.ultima, nuevas: r.nuevas || 0, aviso: r.aviso || '' };
+}
+
+function resolverSugerencia(id) {
+  var lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  try {
+    var estado = leerSugerencias();
+    estado.pendientes = estado.pendientes.filter(function (s) { return s.id !== id; });
+    guardarSugerencias(estado);
+  } finally {
+    lock.releaseLock();
+  }
+  return {};
 }
 
 // Ejecuta esta función UNA VEZ desde el editor (▷ Ejecutar) para darle al

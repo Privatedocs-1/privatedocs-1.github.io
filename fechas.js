@@ -151,7 +151,40 @@
     return { tipo: "pendiente" };
   }
 
+  // ---------- Año académico (agosto a julio) ----------
+  function anioAcademicoDe(fecha) {
+    var y = fecha.getFullYear();
+    return fecha.getMonth() >= 7 ? y + "-" + (y + 1) : (y - 1) + "-" + y;
+  }
+  function anioAcademicoActual() { return anioAcademicoDe(new Date()); }
+
+  // Adivina el año académico de un logro por su texto ("2026-2027", "septiembre 2026", "2026").
+  function anioAcademicoDeTexto(texto) {
+    var s = String(texto || "").toLowerCase();
+    var m = /(20\d{2})\s*[-–\/]\s*(20\d{2})/.exec(s);
+    if (m && +m[2] === +m[1] + 1) return m[1] + "-" + m[2];
+    var n = new RegExp("(" + MESES.join("|") + ")(?:\\s+de)?\\s+(20\\d{2})").exec(s.normalize("NFD").replace(/[̀-ͯ]/g, ""));
+    if (n) return anioAcademicoDe(new Date(+n[2], MESES.indexOf(n[1]), 15));
+    m = /\b(20\d{2})\b/.exec(s);
+    if (m) {
+      // Solo el año: si es el año calendario actual o el anterior, se usa el año académico que lo incluye en otoño.
+      var y = +m[1];
+      return y + "-" + (y + 1);
+    }
+    return "";
+  }
+
+  function aniosAcademicos(desde) {
+    var actual = anioAcademicoActual();
+    var fin = +actual.split("-")[1];
+    var lista = [];
+    for (var y = fin; y > (desde || 2015); y--) lista.push((y - 1) + "-" + y);
+    return lista;
+  }
+
   global.FechasFBLA = {
+    anioAcademicoDe: anioAcademicoDe, anioAcademicoActual: anioAcademicoActual,
+    anioAcademicoDeTexto: anioAcademicoDeTexto, aniosAcademicos: aniosAcademicos,
     MESES: MESES, MESES_CORTOS: MESES_CORTOS, DIAS_CORTOS: DIAS_CORTOS,
     aISO: aISO, deISO: deISO, deMes: deMes, largo: largo, textoMes: textoMes,
     desdeTexto: desdeTexto, leer: leer, texto: texto, caja: caja, estado: estado, leerHora: leerHora,

@@ -66,6 +66,8 @@
         { k: "url", l: "Enlace del script de Google (termina en /exec)", ph: "https://script.google.com/macros/s/.../exec",
           nota: "Lo obtienes una sola vez al instalar el script. Las instrucciones están en GUIA.md." }
       ] },
+    { key: "_sugerencias", titulo: "💡 Sugerencias de Instagram", tipo: "sugerencias",
+      ayuda: "Cada día se revisan las publicaciones nuevas de Instagram y se proponen eventos y logros. Revisa, edita lo que haga falta y apruébalos; se publican al «Guardar cambios»." },
     { key: "_visitas", titulo: "📊 Visitas", tipo: "visitas",
       ayuda: "Cuántas personas visitan la página. Cada navegador cuenta una vez por día (recargar no suma). No se guardan datos personales ni se usan cookies." },
     { key: "directiva", titulo: "👥 Directiva", tipo: "lista", item: "oficial",
@@ -79,7 +81,11 @@
       ayuda: "Premios y reconocimientos del capítulo.",
       campos: [
         { k: "titulo", l: "Logro", ph: "1er lugar — Social Media Strategies" },
-        { k: "detalle", l: "Detalle", ph: "Conferencia Estatal 2026" }
+        { k: "competencia", l: "Competencia de FBLA (opcional)", tipo: "competencia",
+          ph: "Escribe para buscar: Accounting, Public Speaking…",
+          nota: "Lista oficial de eventos competitivos de FBLA (escuela superior). Déjalo vacío si no es una competencia." },
+        { k: "detalle", l: "Detalle", ph: "Conferencia Estatal (SLC) · nombre del estudiante" },
+        { k: "anio_academico", l: "Año académico", tipo: "anio" }
       ] },
     { key: "instagram", titulo: "📷 Instagram", tipo: "objeto",
       ayuda: "La página muestra solas las publicaciones más recientes de Instagram usando el feed de Behold.so. No tienes que hacer nada cuando publiquen algo nuevo: aparece solo (Behold se actualiza una vez al día).",
@@ -186,7 +192,13 @@
     $("ocupado").hidden = !msg;
   }
 
+  // Mientras se edita una sugerencia de Instagram, los cambios no cuentan (aún no van a la página).
+  var silencioCambios = false;
+  document.addEventListener("pointerdown", function () { silencioCambios = false; }, true);
+  document.addEventListener("focusin", function () { silencioCambios = false; }, true);
+
   function marcarCambio() {
+    if (silencioCambios) return;
     hayCambios = true;
     $("guardar").disabled = false;
     $("estado").textContent = "● Cambios sin guardar";
@@ -379,6 +391,12 @@
     }
     // Fechas de eventos escritas a mano → formato nuevo (día, varios días, mes o por anunciar).
     if (Array.isArray(datos.eventos)) datos.eventos.forEach(normalizarFechaEvento);
+    // Logros sin año académico: se adivina por el texto (o el año actual).
+    if (Array.isArray(datos.logros)) datos.logros.forEach(function (l) {
+      if (l && typeof l === "object" && vacio(l.anio_academico)) {
+        l.anio_academico = FX.anioAcademicoDeTexto((l.titulo || "") + " " + (l.detalle || "")) || FX.anioAcademicoActual();
+      }
+    });
     rutasOriginales = rutasFotos(datos);
   }
 
@@ -415,6 +433,7 @@
     }
     if (s.tipo === "albumes") return pintarAlbumes(panel, s);
     if (s.tipo === "visitas") return pintarVisitas(panel, s);
+    if (s.tipo === "sugerencias") return pintarSugerencias(panel, s);
 
     panel.appendChild(el("h2", { texto: s.titulo }));
     panel.appendChild(el("p", { class: "ayuda", texto: s.ayuda }));
@@ -517,6 +536,36 @@
     }
     if (tipo === "foto") return campoFoto(obj, c);
     if (tipo === "fechaEvento") return campoFechaEvento(obj, c);
+    if (tipo === "anio") {
+      if (vacio(obj[c.k])) obj[c.k] = FX.anioAcademicoDeTexto((obj.titulo || "") + " " + (obj.detalle || "")) || FX.anioAcademicoActual();
+      var sel = el("select", { id: id, class: "selector-simple" });
+      var anios = FX.aniosAcademicos(2010);
+      if (anios.indexOf(obj[c.k]) < 0) anios.unshift(obj[c.k]);
+      anios.forEach(function (a) { var o = el("option", { value: a, texto: a }); if (a === obj[c.k]) o.selected = true; sel.appendChild(o); });
+      sel.addEventListener("change", function () { obj[c.k] = sel.value; marcarCambio(); });
+      return el("div", { class: "campo" }, [el("label", { for: id, texto: c.l }), sel,
+        el("p", { class: "campo__nota", texto: "De agosto a julio. En la página, los logros se agrupan por año académico." })]);
+    }
+    if (tipo === "competencia") {
+      var lista = document.getElementById("lista-competencias");
+      if (!lista) {
+        lista = el("datalist", { id: "lista-competencias" });
+        (window.COMPETENCIAS_FBLA || []).forEach(function (n) { lista.appendChild(el("option", { value: n })); });
+        document.body.appendChild(lista);
+      }
+      var comp = el("input", { type: "text", id: id, list: "lista-competencias", placeholder: c.ph, autocomplete: "off" });
+      comp.value = obj[c.k] || "";
+      var estadoComp = el("p", { class: "campo__nota" });
+      var revisarComp = function () {
+        var v = comp.value.trim();
+        var oficial = (window.COMPETENCIAS_FBLA || []).some(function (n) { return n.toLowerCase() === v.toLowerCase(); });
+        estadoComp.textContent = !v ? c.nota : oficial ? "✓ Evento oficial de FBLA" : "Este nombre no está en la lista oficial (puedes dejarlo si es otra competencia).";
+        estadoComp.style.color = v && oficial ? "#1d7a3a" : "";
+      };
+      revisarComp();
+      comp.addEventListener("input", function () { obj[c.k] = comp.value; marcarCambio(); revisarComp(); });
+      return el("div", { class: "campo" }, [el("label", { for: id, texto: c.l }), comp, estadoComp]);
+    }
 
     if (obj[c.k] === undefined && c.defTexto) obj[c.k] = c.defTexto;
     var valor = obj[c.k] === undefined || obj[c.k] === null ? "" : String(obj[c.k]);
@@ -931,6 +980,141 @@
     panel.appendChild(rejilla);
   }
 
+  // ---------- Sugerencias de Instagram ----------
+  var sugerencias = null;          // lista que devuelve el script
+  var sugerenciasInfo = {};
+  var sugerenciasPorConfirmar = []; // aprobadas: se quitan de la lista del script al guardar
+
+  function defDe(key) { return SECCIONES.filter(function (s) { return s.key === key; })[0]; }
+
+  function pintarSugerencias(panel, s) {
+    panel.appendChild(el("h2", { texto: s.titulo }));
+    panel.appendChild(el("p", { class: "ayuda", texto: s.ayuda }));
+    var zona = el("div");
+    panel.appendChild(el("div", { class: "fila-titulo", style: "border-top:0;padding-top:0;margin-top:0" }, [
+      el("span", { class: "campo__nota", id: "sug-ultima", texto: "" }),
+      el("button", { class: "btn btn--azul", type: "button", onclick: function () { cargarSugerencias(zona, true); } }, ["🔄 Revisar Instagram ahora"])
+    ]));
+    panel.appendChild(zona);
+    if (sugerencias) dibujarSugerencias(zona);
+    else cargarSugerencias(zona, false);
+  }
+
+  function cargarSugerencias(zona, forzar) {
+    zona.innerHTML = "";
+    zona.appendChild(el("div", { class: "vacio", texto: forzar ? "Revisando Instagram…" : "Cargando sugerencias…" }));
+    script("sugerencias", { forzar: forzar }).then(function (r) {
+      var yaAprobadas = {};
+      (sugerencias || []).forEach(function (x) { if (x.estado === "aprobada") yaAprobadas[x.id] = x; });
+      sugerencias = (r.sugerencias || []).map(function (x) { return yaAprobadas[x.id] || x; });
+      sugerenciasInfo = r;
+      dibujarSugerencias(zona);
+      if (forzar) avisar(r.nuevas ? r.nuevas + (r.nuevas === 1 ? " sugerencia nueva." : " sugerencias nuevas.") : "No hay publicaciones nuevas con eventos o logros.");
+    }).catch(function (e) {
+      zona.innerHTML = "";
+      zona.appendChild(el("div", { class: "vacio", texto: e.message }));
+    });
+  }
+
+  function dibujarSugerencias(zona) {
+    zona.innerHTML = "";
+    var ult = $("sug-ultima");
+    if (ult && sugerenciasInfo.ultima) ult.textContent = "Última revisión: " + new Date(sugerenciasInfo.ultima).toLocaleString("es-PR", { dateStyle: "medium", timeStyle: "short" });
+    if (sugerenciasInfo.aviso) zona.appendChild(el("div", { class: "aviso", texto: sugerenciasInfo.aviso }));
+    var lista = (sugerencias || []).filter(function (x) { return x.estado !== "descartada"; });
+    if (!lista.length) {
+      zona.appendChild(el("div", { class: "vacio", texto: "No hay sugerencias pendientes. 🎉 Se revisa Instagram una vez al día." }));
+      return;
+    }
+    lista.forEach(function (sug) { zona.appendChild(tarjetaSugerencia(sug, zona)); });
+  }
+
+  function tarjetaSugerencia(sug, zona) {
+    var post = sug.post || {};
+    var card = el("div", { class: "sug" + (sug.estado === "aprobada" ? " sug--aprobada" : "") });
+    var fechaPost = post.fecha ? new Date(post.fecha).toLocaleDateString("es-PR", { day: "numeric", month: "long", year: "numeric" }) : "";
+
+    // Columna de la publicación original
+    var texto = el("p", { class: "sug__texto", texto: post.texto || "" });
+    card.appendChild(el("div", { class: "sug__post" }, [
+      post.imagen ? el("img", { src: post.imagen, alt: "", loading: "lazy", referrerpolicy: "no-referrer" }) : null,
+      el("span", { class: "campo__nota", texto: "Publicado en Instagram" + (fechaPost ? " el " + fechaPost : "") }),
+      texto,
+      post.permalink ? el("a", { href: post.permalink, target: "_blank", rel: "noopener", class: "sug__enlace", texto: "Ver publicación ↗" }) : null
+    ]));
+
+    // Columna editable
+    var form = el("div", { class: "sug__form" });
+    if (sug.estado === "aprobada") {
+      form.appendChild(el("strong", { class: "foto-p__ok", texto: "✓ Añadido a " + (sug.tipo === "logro" ? "Logros" : "Eventos") + " — se publica al «Guardar cambios»" }));
+      card.appendChild(form);
+      return card;
+    }
+    var tipos = el("div", { class: "tipos-fecha", role: "radiogroup", "aria-label": "Tipo" });
+    [["evento", "📅 Evento"], ["logro", "🏆 Logro"]].forEach(function (tp) {
+      tipos.appendChild(el("button", {
+        type: "button", role: "radio", "aria-checked": sug.tipo === tp[0] ? "true" : "false",
+        class: "tipo-fecha" + (sug.tipo === tp[0] ? " tipo-fecha--activo" : ""),
+        onclick: function () {
+          if (sug.tipo === tp[0]) return;
+          // Pasa el texto principal de un tipo al otro
+          if (tp[0] === "logro") { sug.titulo = sug.titulo || sug.nombre || ""; sug.detalle = sug.detalle || ""; }
+          else { sug.nombre = sug.nombre || sug.titulo || ""; if (!sug.tipo_fecha) sug.tipo_fecha = "dia"; }
+          sug.tipo = tp[0];
+          card.replaceWith(tarjetaSugerencia(sug, zona));
+        }
+      }, [tp[1]]));
+    });
+    form.appendChild(tipos);
+    var def = defDe(sug.tipo === "logro" ? "logros" : "eventos");
+    def.campos.forEach(function (c) { form.appendChild(campo(sug, c)); });
+    // Editar una sugerencia no es un cambio de la página hasta que se aprueba.
+    form.addEventListener("pointerdown", function () { silencioCambios = true; }, true);
+    form.addEventListener("focusin", function () { silencioCambios = true; }, true);
+    form.appendChild(el("div", { class: "foto-p__botones" }, [
+      el("button", { class: "btn btn--azul", type: "button", onclick: function () { aprobarSugerencia(sug, zona); } },
+        ["✓ Añadir a " + (sug.tipo === "logro" ? "Logros" : "Eventos")]),
+      el("button", { class: "btn btn--peligro", type: "button", onclick: function () { descartarSugerencia(sug, zona); } }, ["✕ Descartar"])
+    ]));
+    card.appendChild(form);
+    return card;
+  }
+
+  function aprobarSugerencia(sug, zona) {
+    silencioCambios = false;
+    if (modo !== "github") return avisar("En modo prueba no se pueden aprobar sugerencias.", true);
+    var item;
+    if (sug.tipo === "logro") {
+      if (vacio(sug.titulo)) return avisar("Escribe el título del logro.", true);
+      item = { titulo: String(sug.titulo).trim(), competencia: String(sug.competencia || "").trim(),
+        detalle: String(sug.detalle || "").trim(), anio_academico: sug.anio_academico || FX.anioAcademicoActual() };
+      if (!Array.isArray(datos.logros)) datos.logros = [];
+      datos.logros.unshift(item);
+    } else {
+      if (vacio(sug.nombre)) return avisar("Escribe el nombre del evento.", true);
+      item = { nombre: String(sug.nombre).trim(), tipo_fecha: sug.tipo_fecha || "dia", hora: sug.hora || "", lugar: sug.lugar || "", descripcion: sug.descripcion || "" };
+      ["inicio", "fin", "mes", "fecha_texto"].forEach(function (k) { if (sug[k]) item[k] = sug[k]; });
+      item.fecha = FX.texto(item);
+      if (!Array.isArray(datos.eventos)) datos.eventos = [];
+      datos.eventos.push(item);
+    }
+    sug.estado = "aprobada";
+    sugerenciasPorConfirmar.push(sug.id);
+    marcarCambio();
+    dibujarSugerencias(zona);
+    avisar("Añadido a " + (sug.tipo === "logro" ? "Logros" : "Eventos") + ". Recuerda «Guardar cambios».");
+  }
+
+  function descartarSugerencia(sug, zona) {
+    if (!confirm("¿Descartar esta sugerencia? No se añadirá a la página.")) return;
+    ocupado("Descartando…");
+    script("resolverSugerencia", { id: sug.id }).then(function () {
+      sug.estado = "descartada";
+      dibujarSugerencias(zona);
+    }).catch(function (e) { avisar(e.message, true); })
+      .then(function () { ocupado(null); });
+  }
+
   // ---------- Visitas ----------
   var visitasCache = null;
 
@@ -1316,10 +1500,18 @@
       // 3) Avisar al script de Google cuáles fotos de miembros se aprobaron.
       var confirmar = aprobadas.slice();
       aprobadas = [];
+      var sugListas = sugerenciasPorConfirmar.slice();
+      sugerenciasPorConfirmar = [];
       return confirmar.reduce(function (p, id) {
         return p.then(function () { return script("resolver", { id: id, aprobar: true }).catch(function () {}); });
       }, Promise.resolve()).then(function () {
+        // Sugerencias de Instagram aprobadas: salen de la lista de pendientes.
+        return sugListas.reduce(function (p, id) {
+          return p.then(function () { return script("resolverSugerencia", { id: id }).catch(function () {}); });
+        }, Promise.resolve());
+      }).then(function () {
         if (pendientes) pendientes = pendientes.filter(function (p) { return p.estado === "pendiente"; });
+        if (sugerencias) sugerencias = sugerencias.filter(function (x) { return x.estado !== "aprobada"; });
       });
     }).catch(function (e) {
       avisar(e.message, true);

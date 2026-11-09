@@ -201,10 +201,7 @@
     // ---- Logros ----
     var logros = lista(d.logros);
     if (logros.length) {
-      html += seccion("logros", "Logros",
-        '<ul class="logros">' + logros.map(function (l) {
-          return '<li class="logro"><span class="logro__icono" aria-hidden="true">★</span><div><h3>' + t(l.titulo) + "</h3><p>" + t(l.detalle) + "</p></div></li>";
-        }).join("") + "</ul>");
+      html += seccion("logros", "Logros", htmlLogros(logros));
       nav.push(["logros", "Logros"]);
     }
 
@@ -318,8 +315,148 @@
         (e.descripcion ? "<p>" + t(e.descripcion) + "</p>" : "") +
         (insignia && !enVivo ? '<p class="evento__cuenta">' + insignia + "</p>" : "") +
         enVivo +
+        (st.tipo !== "pasado" ? '<button type="button" class="evento__compartir" data-compartir="' + i + '">📤 Compartir imagen</button>' : "") +
         "</div></li>";
     }).join("") + "</ol>";
+  }
+
+  // ---------- Compartir un evento como imagen (WhatsApp, Instagram…) ----------
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest && e.target.closest("[data-compartir]");
+    if (!b) return;
+    var ev = lista(DATOS.eventos)[Number(b.getAttribute("data-compartir"))];
+    if (ev) compartirEvento(ev, b);
+  });
+
+  function cargarImagen(src) {
+    return new Promise(function (ok) {
+      var img = new Image();
+      img.onload = function () { ok(img); };
+      img.onerror = function () { ok(null); };
+      img.src = src;
+    });
+  }
+
+  // Parte un texto en líneas que caben en "ancho".
+  function lineas(ctx, texto, ancho, max) {
+    var palabras = String(texto || "").split(/\s+/), res = [], linea = "";
+    palabras.forEach(function (p) {
+      var prueba = linea ? linea + " " + p : p;
+      if (ctx.measureText(prueba).width > ancho && linea) { res.push(linea); linea = p; } else linea = prueba;
+    });
+    if (linea) res.push(linea);
+    if (res.length > max) { res = res.slice(0, max); res[max - 1] = res[max - 1].replace(/\s*\S*$/, "") + "…"; }
+    return res;
+  }
+
+  function dibujarTarjetaEvento(ev, emblema) {
+    var W = 1080, H = 1350;
+    var c = document.createElement("canvas");
+    c.width = W; c.height = H;
+    var x = c.getContext("2d");
+    var fuente = 'Arial, "Helvetica Neue", Helvetica, sans-serif';
+    // Fondo con los colores oficiales
+    var g = x.createLinearGradient(0, 0, W, H);
+    g.addColorStop(0, "#0a2e7f"); g.addColorStop(1, "#1d52bc");
+    x.fillStyle = g; x.fillRect(0, 0, W, H);
+    x.fillStyle = "rgba(34,106,221,.35)"; x.beginPath(); x.arc(W - 60, 120, 340, 0, Math.PI * 2); x.fill();
+    x.fillStyle = "rgba(255,255,255,.05)"; x.beginPath(); x.arc(80, H - 160, 260, 0, Math.PI * 2); x.fill();
+    x.fillStyle = "#f4ab19"; x.fillRect(0, H - 22, W, 22);
+    // Emblema
+    if (emblema) x.drawImage(emblema, W / 2 - 170, 150, 340, 340);
+    x.textAlign = "center";
+    // Etiqueta
+    var st = F.estado(ev);
+    var etiqueta = st.tipo === "hoy" ? "¡ES HOY!" : st.tipo === "encurso" ? "¡EN CURSO!" : "PRÓXIMO EVENTO";
+    x.fillStyle = "#f4ab19"; x.font = "700 40px " + fuente;
+    x.fillText(etiqueta, W / 2, 570);
+    // Nombre del evento
+    x.fillStyle = "#ffffff"; x.font = "700 76px " + fuente;
+    var ls = lineas(x, ev.nombre, W - 160, 3), y = 670;
+    ls.forEach(function (l) { x.fillText(l, W / 2, y); y += 88; });
+    // Fecha, hora y lugar
+    y += 30;
+    x.font = "700 48px " + fuente; x.fillStyle = "#ffffff";
+    x.fillText("📅 " + F.texto(ev), W / 2, y); y += 70;
+    x.font = "40px " + fuente; x.fillStyle = "rgba(255,255,255,.9)";
+    if (ev.hora) { x.fillText("🕘 " + ev.hora, W / 2, y); y += 60; }
+    if (ev.lugar) lineas(x, "📍 " + ev.lugar, W - 180, 2).forEach(function (l) { x.fillText(l, W / 2, y); y += 56; });
+    // Cuenta regresiva
+    var cuenta = st.tipo === "futuro" ? "Faltan " + st.dias + " días" : st.tipo === "manana" ? "¡Es mañana!" : st.tipo === "estemes" ? "¡Este mes!" : "";
+    if (cuenta) {
+      y += 40;
+      x.font = "700 46px " + fuente;
+      var w = x.measureText(cuenta).width + 80;
+      x.fillStyle = "#f4ab19";
+      var rx = W / 2 - w / 2, ry = y - 52, rh = 76, r = 38;
+      x.beginPath(); x.moveTo(rx + r, ry); x.arcTo(rx + w, ry, rx + w, ry + rh, r); x.arcTo(rx + w, ry + rh, rx, ry + rh, r);
+      x.arcTo(rx, ry + rh, rx, ry, r); x.arcTo(rx, ry, rx + w, ry, r); x.fill();
+      x.fillStyle = "#0a2e7f"; x.fillText(cuenta, W / 2, y);
+    }
+    // Pie
+    var cap = DATOS.capitulo || {};
+    x.fillStyle = "#ffffff"; x.font = "700 40px " + fuente;
+    x.fillText(String(cap.nombre || "FBLA").split(/\s+[-–—]\s+/)[0], W / 2, H - 150);
+    x.font = "32px " + fuente; x.fillStyle = "rgba(255,255,255,.85)";
+    x.fillText(cap.escuela || "", W / 2, H - 104);
+    x.fillStyle = "#f4ab19"; x.font = "700 32px " + fuente;
+    x.fillText(location.host || "fbladcg.github.io", W / 2, H - 56);
+    return c;
+  }
+
+  function compartirEvento(ev, boton) {
+    var texto = boton.textContent;
+    boton.disabled = true;
+    boton.textContent = "Preparando imagen…";
+    cargarImagen("img/emblema-512.png").then(function (emblema) {
+      var lienzo = dibujarTarjetaEvento(ev, emblema);
+      return new Promise(function (ok) { lienzo.toBlob(ok, "image/png"); });
+    }).then(function (blob) {
+      var nombre = String(ev.nombre || "evento").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^\w]+/g, "-").replace(/^-|-$/g, "").toLowerCase() + ".png";
+      var archivo = new File([blob], nombre, { type: "image/png" });
+      var mensaje = ev.nombre + " — " + F.texto(ev) + (ev.lugar ? " · " + ev.lugar : "") + "\n" + location.origin + location.pathname + "#eventos";
+      if (navigator.canShare && navigator.canShare({ files: [archivo] })) {
+        return navigator.share({ files: [archivo], title: ev.nombre, text: mensaje }).catch(function () {});
+      }
+      // Computadora: se descarga la imagen.
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = nombre;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 10000);
+    }).catch(function () {
+      alert("No se pudo crear la imagen en este navegador.");
+    }).then(function () {
+      boton.disabled = false;
+      boton.textContent = texto;
+    });
+  }
+
+  // ---------- Logros agrupados por año académico (desplegables) ----------
+  function htmlLogros(logros) {
+    var actual = F.anioAcademicoActual();
+    var grupos = {};
+    logros.forEach(function (l) {
+      var a = l.anio_academico || F.anioAcademicoDeTexto((l.titulo || "") + " " + (l.detalle || "")) || actual;
+      (grupos[a] = grupos[a] || []).push(l);
+    });
+    var anios = Object.keys(grupos).sort().reverse();
+    // Abierto: el año actual; si no tiene logros, el más reciente.
+    var abierto = grupos[actual] ? actual : anios[0];
+    return '<div class="logros-anios">' + anios.map(function (a) {
+      var n = grupos[a].length;
+      return '<details class="logros-anio"' + (a === abierto ? " open" : "") + ">" +
+        '<summary><span class="logros-anio__nombre">Año académico ' + t(a) + "</span>" +
+        (a === actual ? '<span class="logros-anio__actual">Año actual</span>' : "") +
+        '<span class="logros-anio__n">' + n + (n === 1 ? " logro" : " logros") + "</span></summary>" +
+        '<ul class="logros">' + grupos[a].map(function (l) {
+          return '<li class="logro"><span class="logro__icono" aria-hidden="true">★</span><div>' +
+            "<h3>" + t(l.titulo) + "</h3>" +
+            (l.competencia ? '<p class="logro__comp">🏅 ' + t(l.competencia) + "</p>" : "") +
+            (l.detalle ? "<p>" + t(l.detalle) + "</p>" : "") +
+            "</div></li>";
+        }).join("") + "</ul></details>";
+    }).join("") + "</div>";
   }
 
   // Próximo evento con fecha exacta (para la portada).
