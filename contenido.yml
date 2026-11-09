@@ -21,12 +21,8 @@ sobre_nosotros:
   titulo: ¿Quiénes somos?
   texto: Future Business Leaders of America (FBLA) es la organización estudiantil de negocios más grande del mundo. En nuestro capítulo desarrollamos destrezas de liderazgo, servicio comunitario y preparación profesional a través de competencias, conferencias y actividades durante todo el año escolar.
   datos:
-    - numero: "45"
-      etiqueta: Miembros
-    - numero: "12"
-      etiqueta: Premios estatales
-    - numero: 300+
-      etiqueta: Horas de servicio
+    - numero: "232"
+      etiqueta: Miembros Activos
 anuncios:
   - titulo: Reunión general de miembros
     fecha: 15 de noviembre de 2026
