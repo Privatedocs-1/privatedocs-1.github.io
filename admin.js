@@ -123,6 +123,8 @@
       ayuda: "Si dejas una red social vacía, no aparece en la página.",
       campos: [
         { k: "correo", l: "Correo electrónico" },
+        { k: "fbla_connect", l: "Enlace de FBLA Connect", ph: "https://connect.fbla.org/", defTexto: "https://connect.fbla.org/",
+          nota: "Portal oficial de miembros de FBLA. Déjalo vacío para quitar el botón." },
         { k: "instagram", l: "Enlace de Instagram", ph: "https://www.instagram.com/..." },
         { k: "facebook", l: "Enlace de Facebook", ph: "https://www.facebook.com/..." },
         { k: "tiktok", l: "Enlace de TikTok", ph: "https://www.tiktok.com/@..." }
@@ -506,6 +508,7 @@
     }
     if (tipo === "foto") return campoFoto(obj, c);
 
+    if (obj[c.k] === undefined && c.defTexto) obj[c.k] = c.defTexto;
     var valor = obj[c.k] === undefined || obj[c.k] === null ? "" : String(obj[c.k]);
     var entrada = tipo === "area"
       ? el("textarea", { id: id, placeholder: c.ph })
@@ -914,6 +917,7 @@
     campos.forEach(function (c) {
       if (c.tipo === "lista") r[c.k] = limpiar(c, r[c.k] || []);
       else if (c.tipo === "check") r[c.k] = c.def === false ? r[c.k] === true : r[c.k] !== false;
+      else if (r[c.k] === undefined && c.defTexto) r[c.k] = c.defTexto;
       else r[c.k] = vacio(r[c.k]) ? "" : String(r[c.k]).trim();
     });
     return r;

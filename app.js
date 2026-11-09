@@ -210,8 +210,10 @@
     }
 
     // ---- Contacto ----
+    // FBLA Connect: si no se ha configurado, se usa el portal oficial.
+    var connect = c.fbla_connect === undefined ? "https://connect.fbla.org/" : c.fbla_connect;
     var redes = [
-      ["Instagram", c.instagram], ["Facebook", c.facebook], ["TikTok", c.tiktok]
+      ["FBLA Connect ↗", connect], ["Instagram", c.instagram], ["Facebook", c.facebook], ["TikTok", c.tiktok]
     ].filter(function (r) { return r[1]; });
     if (c.correo || redes.length) {
       html += seccion("contacto", "Contacto",
