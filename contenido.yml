@@ -90,6 +90,14 @@ instagram:
   behold: https://feeds.behold.so/F9QJVJsOjOHNYke4Xg6r
   cantidad: "3"
 albumes:
+  - id: album-mw8qehnp
+    titulo: Iniciación Local FBLA 2026
+    fecha: 8 de diciembre de 2026
+    lugar: Primera Iglesia Presbiteriana - Aguada
+    descripcion: ""
+    publicado: true
+    portada: ""
+    fotos: []
   - id: album-mw8s2ll5
     titulo: FBLA Spirit Day
     fecha: 30 de octubre de 2026
@@ -106,20 +114,6 @@ albumes:
     publicado: true
     portada: ""
     fotos: []
-  - id: album-mw8qehnp
-    titulo: Iniciación Local FBLA 2026
-    fecha: 8 de diciembre de 2026
-    lugar: Primera Iglesia Presbiteriana - Aguada
-    descripcion: ""
-    publicado: true
-    portada: ""
-    fotos:
-      - foto: fotos/albumes/album-mw8qehnp/dsc05568-mw8rsvvj2fl.jpg
-        descripcion: ""
-        autor: Jadriel O. Hernández
-      - foto: fotos/albumes/album-mw8qehnp/img-8043-mw8rx7u60nf.jpg
-        descripcion: ""
-        autor: Leunamis
 subidas:
   activo: true
   url: https://script.google.com/macros/s/AKfycbxRxDlX3I09q9SBuLsRjWQEXdh6rg-brdXNrORBJmQw8AhrhbbV2VDu9qIVLianVzjchA/exec
