@@ -37,21 +37,30 @@ eventos:
     hora: ""
     lugar: Universidad Politécnica, San Juan
     descripcion: Registro disponible hasta el 6 de noviembre de 2026.
+    tipo_fecha: dia
+    inicio: "2026-12-11"
   - nombre: Divulgación del Programa de Administración de Empresas
-    fecha: Enero 2027
+    fecha: Enero de 2027
     hora: ""
     lugar: Escuela Superior Dr. Carlos González
     descripcion: ""
+    tipo_fecha: mes
+    mes: 2027-01
   - nombre: Premiaciones - Eventos Competitivos FBLA 2027
     fecha: 27 de enero de 2027
     hora: 9:00 am
     lugar: Centro de Convenciones de Puerto Rico
     descripcion: Las premiaciones se llevarán a cabo durante el CTE Expo.
+    tipo_fecha: dia
+    inicio: "2027-01-27"
   - nombre: Conferencia Estatal de Liderazgo FBLA 2027
-    fecha: 5 - 7 de abril de 2027
+    fecha: 5 – 7 de abril de 2027
     hora: ""
     lugar: Embassy Suite - Dorado
     descripcion: ""
+    tipo_fecha: rango
+    inicio: "2027-04-05"
+    fin: "2027-04-07"
 directiva:
   - nombre: Victoria A. Concepción Traverso
     puesto: Presidenta
@@ -80,12 +89,20 @@ directiva:
 logros:
   - titulo: Capítulo Madrugador
     detalle: Goofy Games Estatales 2026
+    anio_academico: 2026-2027
+    competencia: ""
   - titulo: Capítulo de mayor participación de estudiantes
     detalle: Goofy Games Estatales 2026
+    anio_academico: 2026-2027
+    competencia: ""
   - titulo: Champion Chapter – Summer Starter 2026-2027
     detalle: 1,800 puntos · Octubre 2026
+    anio_academico: 2026-2027
+    competencia: ""
   - titulo: "Member of the Month (septiembre 2026): Melvin Rivera"
     detalle: Reconocido por su disposición y compromiso en cada actividad del capítulo
+    anio_academico: 2026-2027
+    competencia: ""
 contacto:
   correo: de169609@miescuela.pr
   instagram: https://www.instagram.com/fbla_dcg
@@ -106,6 +123,7 @@ albumes:
     publicado: true
     portada: ""
     fotos: []
+    recibe_fotos: false
   - id: album-mw8s2ll5
     titulo: FBLA Spirit Day
     fecha: 30 de octubre de 2026
@@ -114,6 +132,7 @@ albumes:
     publicado: true
     portada: ""
     fotos: []
+    recibe_fotos: true
   - id: album-mw8rzoot
     titulo: Goofy Games Estatales FBLA 2026
     fecha: 5 de noviembre de 2026
@@ -122,6 +141,7 @@ albumes:
     publicado: true
     portada: ""
     fotos: []
+    recibe_fotos: true
 subidas:
   activo: true
   url: https://script.google.com/macros/s/AKfycbxRxDlX3I09q9SBuLsRjWQEXdh6rg-brdXNrORBJmQw8AhrhbbV2VDu9qIVLianVzjchA/exec
