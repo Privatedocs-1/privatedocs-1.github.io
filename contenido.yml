@@ -41,6 +41,11 @@ eventos:
     hora: ""
     lugar: Escuela Superior Dr. Carlos González
     descripcion: ""
+  - nombre: Premiaciones - Eventos Competitivos FBLA 2027
+    fecha: 27 de enero de 2027
+    hora: 9:00 am
+    lugar: Centro de Convenciones de Puerto Rico
+    descripcion: Las premiaciones se llevarán a cabo durante el CTE Expo.
 directiva:
   - nombre: Victoria A. Concepción Traverso
     puesto: Presidenta
