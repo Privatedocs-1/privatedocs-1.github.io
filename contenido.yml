@@ -31,21 +31,11 @@ anuncios:
     fecha: 1 de noviembre de 2026
     texto: Habla con nuestra consejera para escoger tu evento competitivo antes del 1 de diciembre.
 eventos:
-  - nombre: Venta de dulces para recaudar fondos
-    fecha: 20 de noviembre de 2026
-    hora: 11:00 AM
-    lugar: Cafetería de la escuela
-    descripcion: Apoya a nuestro capítulo para ir a la conferencia estatal.
-  - nombre: Conferencia Regional de Liderazgo
-    fecha: Enero 2027
+  - nombre: Eventos Competitivos FBLA 2026
+    fecha: 11 de diciembre de 2026
     hora: ""
-    lugar: Por anunciar
-    descripcion: Competencias regionales y talleres de liderazgo.
-  - nombre: Conferencia Estatal (SLC)
-    fecha: Marzo 2027
-    hora: ""
-    lugar: Por anunciar
-    descripcion: Los ganadores regionales representan al capítulo a nivel estatal.
+    lugar: Universidad Politécnica, San Juan
+    descripcion: Registro disponible hasta el 6 de noviembre de 2026.
 directiva:
   - nombre: Victoria A. Concepción Traverso
     puesto: Presidenta
