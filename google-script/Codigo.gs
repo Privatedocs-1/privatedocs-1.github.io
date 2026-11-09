@@ -159,11 +159,12 @@ function foto(id) {
   return { tipo: blob.getContentType(), datos: Utilities.base64Encode(blob.getBytes()) };
 }
 
+// Aprobada o rechazada, la foto sale de Drive (va a la papelera; Google la borra a los 30 días).
+// Las aprobadas ya quedaron guardadas en la página, así que no hace falta conservarlas aquí.
 function resolver(id, aprobar) {
   var f = archivoPendiente(id);
-  if (aprobar) f.moveTo(carpeta('Aprobadas'));
-  else f.setTrashed(true);
-  return {};
+  f.setTrashed(true);
+  return { aprobada: aprobar };
 }
 
 // Ejecuta esta función UNA VEZ desde el editor (▷ Ejecutar) para darle al

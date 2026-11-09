@@ -81,8 +81,8 @@ Las fotos **no se publican solas**: llegan a una carpeta privada de Google Drive
 2. En cada foto: revisa el álbum escogido y haz clic en **✓ Aprobar** o **✕ Rechazar**.
 3. Dale a **💾 Guardar cambios**. Las aprobadas se publican con el crédito «📷 Nombre».
 
-- Las rechazadas se borran (van a la papelera de Drive).
-- Las aprobadas quedan también como respaldo en Drive, en la carpeta **Aprobadas**.
+- Al aprobar (y guardar) o rechazar, la foto sale de Google Drive: va a la papelera y Google la borra a los 30 días.
+  Las aprobadas quedan guardadas en la página, así que no se pierden.
 - Para apagar el envío de fotos, quita la marca de **«Permitir que los miembros envíen fotos»**.
 
 ---
@@ -140,7 +140,7 @@ Todo el contenido está en `contenido.yml`, pero el panel es más fácil y evita
 ## D. Instalar el script de Google para las fotos de miembros
 Hazlo con una cuenta de Google **del capítulo o del consejero(a)** (no de una estudiante que se gradúe).
 Las fotos pendientes se guardan en el Google Drive de esa cuenta, en la carpeta
-**«FBLA 3281 - Fotos de miembros»** (subcarpetas **Pendientes** y **Aprobadas**).
+**«FBLA 3281 - Fotos de miembros» → Pendientes**, y salen de Drive cuando se aprueban o rechazan.
 
 1. Entra a **https://script.google.com** → **Nuevo proyecto**. Ponle de nombre «FBLA 3281 Fotos».
 2. Borra lo que haya en `Código.gs` y pega **todo** el contenido del archivo
