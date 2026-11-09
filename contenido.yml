@@ -46,6 +46,11 @@ eventos:
     hora: 9:00 am
     lugar: Centro de Convenciones de Puerto Rico
     descripcion: Las premiaciones se llevarán a cabo durante el CTE Expo.
+  - nombre: Conferencia Estatal de Liderazgo FBLA 2027
+    fecha: 5 - 7 de abril de 2027
+    hora: ""
+    lugar: Embassy Suite - Dorado
+    descripcion: ""
 directiva:
   - nombre: Victoria A. Concepción Traverso
     puesto: Presidenta
