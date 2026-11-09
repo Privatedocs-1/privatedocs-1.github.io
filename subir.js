@@ -65,7 +65,8 @@
   function iniciar(d) {
     var s = d.subidas || {};
     url = /^https:\/\/script\.google\.com\/macros\/s\/[\w-]+\/exec$/.test(String(s.url || "").trim()) ? String(s.url).trim() : "";
-    albumes = (d.albumes || []).filter(function (a) { return a && a.id && a.publicado === true; });
+    // Solo los álbumes publicados que aceptan fotos de miembros.
+    albumes = (d.albumes || []).filter(function (a) { return a && a.id && a.publicado === true && a.recibe_fotos !== false; });
     if (d.capitulo && d.capitulo.nombre) $("marca-texto").textContent = d.capitulo.nombre;
 
     if (s.activo !== true || !url || !albumes.length) {

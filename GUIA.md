@@ -160,3 +160,5 @@ Las fotos pendientes se guardan en el Google Drive de esa cuenta, en la carpeta
 
 > Si algún día cambias el código del script, usa **Implementar → Gestionar implementaciones → ✏️ → Versión: Nueva**
 > para que la URL siga siendo la misma.
+
+> **Fotos de miembros por álbum:** en cada álbum hay una casilla «Los miembros pueden enviar fotos a este álbum». Desmárcala para cerrar el envío de fotos de ese evento (el álbum sigue visible).

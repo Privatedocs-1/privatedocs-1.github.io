@@ -55,6 +55,7 @@
         { k: "lugar", l: "Lugar (opcional)" },
         { k: "descripcion", l: "Descripción (opcional)", tipo: "area" },
         { k: "publicado", l: "Publicado (se ve en la página)", tipo: "check", def: false },
+        { k: "recibe_fotos", l: "Los miembros pueden enviar fotos a este álbum", tipo: "check" },
         { k: "portada", tipo: "oculto" },
         { k: "fotos", tipo: "lista", oculto: true, campos: CAMPOS_FOTO_ALBUM }
       ] },
@@ -813,7 +814,11 @@
         el("div", { class: "album-p__info" }, [
           el("strong", { texto: a.titulo || "(Álbum sin nombre)" }),
           el("span", { texto: [a.fecha, n + (n === 1 ? " foto" : " fotos")].filter(Boolean).join(" · ") }),
-          el("span", { class: a.publicado ? "insignia insignia--si" : "insignia", texto: a.publicado ? "Publicado" : "Borrador" })
+          el("div", { class: "insignias" }, [
+            el("span", { class: a.publicado ? "insignia insignia--si" : "insignia", texto: a.publicado ? "Publicado" : "Borrador" }),
+            a.publicado && a.recibe_fotos !== false && (datos.subidas || {}).activo === true
+              ? el("span", { class: "insignia", texto: "📤 Recibe fotos" }) : null
+          ])
         ]),
         el("div", { class: "album-p__botones" }, [
           el("button", { class: "btn btn--azul btn--chico", type: "button",

@@ -78,6 +78,11 @@
     return s.activo === true && /^https:\/\/script\.google\.com\//.test(String(s.url || ""));
   }
 
+  // ¿Este álbum acepta fotos de miembros? (activado por defecto)
+  function albumRecibeFotos(a) {
+    return subidasActivas() && a && a.id && a.publicado === true && a.recibe_fotos !== false;
+  }
+
   function construir(d) {
     DATOS = d;
     var cap = d.capitulo || {};
@@ -227,7 +232,7 @@
     menu.innerHTML = nav.map(function (n) {
       return '<a href="#' + n[0] + '">' + n[1] + "</a>";
     }).join("") +
-      (subidasActivas() ? '<a class="menu__subir" href="subir.html">📤 Subir fotos</a>' : "") +
+      (lista(d.albumes).some(albumRecibeFotos) ? '<a class="menu__subir" href="subir.html">📤 Subir fotos</a>' : "") +
       (connect ? '<a class="menu__connect" href="' + t(connect) + '" target="_blank" rel="noopener">FBLA Connect ↗</a>' : "");
     pie.innerHTML = "<p>© " + new Date().getFullYear() + " " + t(cap.nombre) + " · " + t(cap.escuela) + "</p>" +
       '<p class="pie__nota">Capítulo local de Future Business Leaders of America.</p>' +
@@ -400,7 +405,7 @@
       '<div class="album-vista__barra"><div class="contenedor album-vista__fila">' +
       '<a class="boton boton--claro" href="#albumes">← Álbumes</a>' +
       '<div class="album-vista__acciones">' +
-      (subidasActivas() ? '<a class="boton boton--claro" href="subir.html?album=' + encodeURIComponent(a.id) + '">📤 Subir mis fotos</a>' : "") +
+      (albumRecibeFotos(a) ? '<a class="boton boton--claro" href="subir.html?album=' + encodeURIComponent(a.id) + '">📤 Subir mis fotos</a>' : "") +
       '<button class="boton boton--acento" type="button" data-zip title="Descarga cada foto por separado (JPG o PNG)">⬇ Descargar todas</button>' +
       "</div></div></div>" +
       '<div class="contenedor album-vista__cuerpo">' +
