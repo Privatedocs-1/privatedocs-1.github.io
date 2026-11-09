@@ -94,7 +94,10 @@ albumes:
     descripcion: ""
     publicado: true
     portada: ""
-    fotos: []
+    fotos:
+      - foto: fotos/albumes/album-mw8qehnp/partes-de-word-mw8qm47nmw2.png
+        descripcion: ""
+        autor: ""
 subidas:
   activo: false
   url: ""
