@@ -96,7 +96,10 @@ albumes:
     descripcion: ""
     publicado: true
     portada: ""
-    fotos: []
+    fotos:
+      - foto: fotos/albumes/album-mw8qehnp/dsc05568-mw8rsvvj2fl.jpg
+        descripcion: ""
+        autor: Jadriel O. Hernández
 subidas:
   activo: true
   url: https://script.google.com/macros/s/AKfycbxRxDlX3I09q9SBuLsRjWQEXdh6rg-brdXNrORBJmQw8AhrhbbV2VDu9qIVLianVzjchA/exec
