@@ -1555,16 +1555,20 @@
     if (!a) return avisar("Escoge el álbum donde va la foto.", true);
     if (!p.datos) return avisar("La foto todavía se está cargando. Espera un momento.", true);
     if (modo !== "github") return avisar("En modo prueba no se pueden aprobar fotos.", true);
-    var ext = /png/.test(p.tipo) ? "png" : "jpg";
-    var ruta = "fotos/albumes/" + a.id + "/" + nombreSeguro(p.archivo || "foto-miembro", ext);
-    porSubir[ruta] = p.datos;
-    vistas[ruta] = "data:" + p.tipo + ";base64," + p.datos;
-    fotosDe(a).push({ foto: ruta, descripcion: "", autor: p.nombre || "" });
-    p.estado = "aprobada";
-    aprobadas.push(p.id);
-    marcarCambio();
-    pintarPendientes(zona);
-    avisar("Foto añadida a «" + (a.titulo || "álbum") + "». Recuerda «Guardar cambios».");
+    if (p.estado === "aprobando") return;
+    p.estado = "aprobando";
+    // Se guarda en WebP (la mitad del espacio, misma calidad).
+    aWebP(p.tipo, p.datos).then(function (f) {
+      var ruta = "fotos/albumes/" + a.id + "/" + nombreSeguro(p.archivo || "foto-miembro", f.ext);
+      porSubir[ruta] = f.datos;
+      vistas[ruta] = "data:" + f.tipo + ";base64," + f.datos;
+      fotosDe(a).push({ foto: ruta, descripcion: "", autor: p.nombre || "" });
+      p.estado = "aprobada";
+      aprobadas.push(p.id);
+      marcarCambio();
+      pintarPendientes(zona);
+      avisar("Foto añadida a «" + (a.titulo || "álbum") + "». Recuerda «Guardar cambios».");
+    });
   }
 
   function rechazar(p, zona) {
@@ -1582,6 +1586,44 @@
     var base = String(nombre).replace(/\.[^.]+$/, "").normalize("NFD").replace(/[̀-ͯ]/g, "")
       .toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 40) || "foto";
     return base + "-" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5) + "." + ext;
+  }
+
+  // ---------- Compresión de fotos ----------
+  // WebP ocupa ~la mitad que JPG con la misma calidad (medido: 197 KB → 103 KB).
+  // Si el navegador no sabe crear WebP (Safari viejo), se usa JPG.
+  var CALIDAD = 0.85;
+  function comprimirFoto(canvas) {
+    var webp = canvas.toDataURL("image/webp", CALIDAD);
+    if (webp.indexOf("data:image/webp") === 0) return { dataUrl: webp, ext: "webp" };
+    return { dataUrl: canvas.toDataURL("image/jpeg", CALIDAD), ext: "jpg" };
+  }
+
+  function tieneTransparencia(ctx, w, h) {
+    var d = ctx.getImageData(0, 0, w, h).data;
+    for (var i = 3; i < d.length; i += 16) if (d[i] < 250) return true;   // revisa 1 de cada 4 píxeles
+    return false;
+  }
+
+  // Convierte una foto (base64) a WebP; si no se puede, la deja igual.
+  function aWebP(tipo, base64) {
+    return new Promise(function (ok) {
+      if (/webp/.test(tipo)) return ok({ tipo: tipo, datos: base64, ext: "webp" });
+      var img = new Image();
+      img.onload = function () {
+        var c = document.createElement("canvas");
+        c.width = img.naturalWidth; c.height = img.naturalHeight;
+        var x = c.getContext("2d");
+        x.fillStyle = "#fff"; x.fillRect(0, 0, c.width, c.height);
+        x.drawImage(img, 0, 0);
+        var r = comprimirFoto(c);
+        var nuevo = r.dataUrl.split(",")[1];
+        // Solo se usa si de verdad ocupa menos.
+        if (nuevo.length < base64.length) ok({ tipo: r.ext === "webp" ? "image/webp" : "image/jpeg", datos: nuevo, ext: r.ext });
+        else ok({ tipo: tipo, datos: base64, ext: /png/.test(tipo) ? "png" : "jpg" });
+      };
+      img.onerror = function () { ok({ tipo: tipo, datos: base64, ext: /png/.test(tipo) ? "png" : "jpg" }); };
+      img.src = "data:" + tipo + ";base64," + base64;
+    });
   }
 
   // Calcula el área con contenido (sin márgenes blancos o transparentes).
@@ -1626,7 +1668,11 @@
         if (!png) { ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, c.width, c.height); }
         ctx.drawImage(img, a.x, a.y, a.w, a.h, 0, 0, c.width, c.height);
         URL.revokeObjectURL(url);
-        ok({ dataUrl: c.toDataURL(png ? "image/png" : "image/jpeg", 0.85), ext: png ? "png" : "jpg" });
+        // PNG con transparencia (logos): se queda en PNG. Lo demás: WebP (mitad de espacio, misma calidad).
+        if (png && tieneTransparencia(ctx, c.width, c.height)) return ok({ dataUrl: c.toDataURL("image/png"), ext: "png" });
+        if (png) { var fondo = document.createElement("canvas"); fondo.width = c.width; fondo.height = c.height;
+          var fx = fondo.getContext("2d"); fx.fillStyle = "#fff"; fx.fillRect(0, 0, c.width, c.height); fx.drawImage(c, 0, 0); c = fondo; }
+        ok(comprimirFoto(c));
       };
       img.onerror = function () {
         URL.revokeObjectURL(url);

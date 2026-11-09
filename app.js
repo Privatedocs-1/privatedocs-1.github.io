@@ -741,6 +741,17 @@
         '<a class="boton boton--acento visor__descargar" download>⬇ Descargar</a></div>';
       document.body.appendChild(visor);
       visor.querySelector(".visor__cerrar").addEventListener("click", cerrarVisor);
+      // Descargar: las fotos WebP se entregan en JPG.
+      visor.querySelector(".visor__descargar").addEventListener("click", function (e) {
+        var d = e.currentTarget;
+        if (!/\.webp$/i.test(d.getAttribute("href") || "")) return;
+        e.preventDefault();
+        var txt = d.textContent;
+        d.textContent = "Preparando…";
+        fotoParaDescargar(d.getAttribute("href")).then(function (x) { guardarBlob(x.blob, x.nombre); })
+          .catch(function () { window.open(d.getAttribute("href"), "_blank"); })
+          .then(function () { d.textContent = txt; });
+      });
       visor.querySelector(".visor__ant").addEventListener("click", function () { moverVisor(-1); });
       visor.querySelector(".visor__sig").addEventListener("click", function () { moverVisor(1); });
       visor.addEventListener("click", function (e) { if (e.target === visor) cerrarVisor(); });
@@ -767,7 +778,7 @@
     visor.querySelector(".visor__cuenta").textContent = (posVisor + 1) + " de " + fotosAbiertas.length;
     var d = visor.querySelector(".visor__descargar");
     d.href = src;
-    d.setAttribute("download", nombreArchivo(src));
+    d.setAttribute("download", nombreArchivo(src).replace(/\.webp$/i, ".jpg"));
     var varias = fotosAbiertas.length > 1;
     visor.querySelector(".visor__ant").hidden = !varias;
     visor.querySelector(".visor__sig").hidden = !varias;
@@ -794,8 +805,40 @@
     }
   });
 
-  // ---------- Descargar todas (cada foto en su formato: JPG o PNG) ----------
+  // ---------- Descargas ----------
+  // Las fotos se guardan en WebP (ocupan la mitad); al descargarlas se entregan en JPG,
+  // que abre en cualquier celular o computadora. Las PNG y JPG se bajan tal cual.
   function esperar(ms) { return new Promise(function (ok) { setTimeout(ok, ms); }); }
+
+  function fotoParaDescargar(url) {
+    var nombre = nombreArchivo(url);
+    return fetch(url).then(function (r) {
+      if (!r.ok) throw new Error("No se pudo bajar " + nombre);
+      return r.blob();
+    }).then(function (b) {
+      if (!/\.webp$/i.test(nombre)) return { blob: b, nombre: nombre };
+      return createImageBitmap(b).then(function (bmp) {
+        var c = document.createElement("canvas");
+        c.width = bmp.width; c.height = bmp.height;
+        var x = c.getContext("2d");
+        x.fillStyle = "#fff"; x.fillRect(0, 0, c.width, c.height);
+        x.drawImage(bmp, 0, 0);
+        return new Promise(function (ok) { c.toBlob(ok, "image/jpeg", 0.95); });
+      }).then(function (jpg) {
+        return { blob: jpg, nombre: nombre.replace(/\.webp$/i, ".jpg") };
+      }, function () { return { blob: b, nombre: nombre }; });
+    });
+  }
+
+  function guardarBlob(blob, nombre) {
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = nombre;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 20000);
+  }
 
   function descargarTodas(album, boton) {
     if (boton.disabled) return;
@@ -805,17 +848,8 @@
     fotos.reduce(function (p, f, i) {
       return p.then(function () {
         boton.textContent = "Descargando " + (i + 1) + " de " + fotos.length + "…";
-        return fetch(enlaceSeguro(f.foto)).then(function (r) {
-          if (!r.ok) throw new Error("No se pudo bajar " + nombreArchivo(f.foto));
-          return r.blob();
-        }).then(function (b) {
-          var a = document.createElement("a");
-          a.href = URL.createObjectURL(b);
-          a.download = nombreArchivo(f.foto);
-          document.body.appendChild(a);
-          a.click();
-          a.remove();
-          setTimeout(function () { URL.revokeObjectURL(a.href); }, 20000);
+        return fotoParaDescargar(enlaceSeguro(f.foto)).then(function (x) {
+          guardarBlob(x.blob, x.nombre);
           return esperar(600);   // pausa para que el navegador acepte varias descargas
         });
       });
