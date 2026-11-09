@@ -78,9 +78,23 @@ logros:
     detalle: Goofy Games Estatales 2026
   - titulo: Capítulo de mayor participación de estudiantes
     detalle: Goofy Games Estatales 2026
-galeria: []
 contacto:
   correo: de169609@miescuela.pr
   instagram: https://www.instagram.com/fbla_dcg
   facebook: www.facebook.com/flcadcg
   tiktok: ""
+instagram:
+  publicaciones: []
+  titulo: ""
+albumes:
+  - id: album-mw8qehnp
+    titulo: Iniciación Local FBLA 2026
+    fecha: 8 de diciembre de 2026
+    lugar: Primera Iglesia Presbiteriana - Aguada
+    descripcion: ""
+    publicado: true
+    portada: ""
+    fotos: []
+subidas:
+  activo: false
+  url: ""
