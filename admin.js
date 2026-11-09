@@ -29,7 +29,19 @@
   ];
 
   // ---------- Partes de la página y sus campos ----------
+  // Grupos del menú lateral (el orden de aquí es el orden del menú).
+  var GRUPOS = [
+    { nombre: "", keys: ["_inicio"] },
+    { nombre: "Contenido", keys: ["anuncios", "eventos", "logros", "documentos"] },
+    { nombre: "Fotos", keys: ["albumes", "subidas"] },
+    { nombre: "Instagram", keys: ["_sugerencias", "instagram"] },
+    { nombre: "Página", keys: ["capitulo", "sobre_nosotros", "directiva", "unete", "contacto"] },
+    { nombre: "Estadísticas", keys: ["_visitas"] }
+  ];
+
   var SECCIONES = [
+    { key: "_inicio", titulo: "🏠 Inicio", tipo: "resumen",
+      ayuda: "Resumen de la página y accesos rápidos." },
     { key: "anuncios", titulo: "📢 Anuncios", tipo: "lista", item: "anuncio", nuevoArriba: true,
       extraResumen: function (a) { return a.fecha || ""; },
       ayuda: "Avisos para los miembros. El primero de la lista es el que sale primero en la página.",
@@ -221,11 +233,18 @@
   document.addEventListener("pointerdown", function () { silencioCambios = false; }, true);
   document.addEventListener("focusin", function () { silencioCambios = false; }, true);
 
+  // Indicador de la barra superior: ok (verde), pendiente (dorado), prueba (gris).
+  function fijarEstado(tipo) {
+    var e = $("estado");
+    e.textContent = tipo === "ok" ? "Todo guardado" : tipo === "pendiente" ? "Cambios sin guardar" : "Modo prueba";
+    e.setAttribute("data-estado", tipo);
+  }
+
   function marcarCambio() {
     if (silencioCambios) return;
     hayCambios = true;
     $("guardar").disabled = false;
-    $("estado").textContent = "● Cambios sin guardar";
+    fijarEstado("pendiente");
   }
 
   function b64aTexto(b64) {
@@ -430,7 +449,7 @@
     $("editor").hidden = false;
     $("botones").hidden = false;
     $("guardar").textContent = modo === "github" ? "💾 Guardar cambios" : "⬇ Descargar archivo";
-    $("estado").textContent = modo === "github" ? "Todo guardado" : "Modo prueba";
+    fijarEstado(modo === "github" ? "ok" : "prueba");
     var ultima = ls(CLAVE_LS_PESTANA);
     if (ultima && SECCIONES.some(function (s) { return s.key === ultima; })) actual = ultima;
     pintarPestanas();
@@ -475,26 +494,37 @@
     return "";
   }
 
+  function seccionDe(key) { return SECCIONES.filter(function (s) { return s.key === key; })[0]; }
+
   function pintarPestanas() {
     var nav = $("pestanas");
     nav.innerHTML = "";
-    // Celular: menú desplegable
+    // Celular: menú desplegable agrupado
     var sel = el("select", { class: "pestanas-movil", "aria-label": "Parte de la página" });
-    SECCIONES.forEach(function (s) {
-      var c = contadorDe(s), n = typeof c === "object" ? c.n : c;
-      var o = el("option", { value: s.key, texto: s.titulo + (n ? " (" + n + ")" : "") });
-      if (s.key === actual) o.selected = true;
-      sel.appendChild(o);
+    GRUPOS.forEach(function (g) {
+      var destino = g.nombre ? el("optgroup", { label: g.nombre }) : sel;
+      g.keys.forEach(function (k) {
+        var s = seccionDe(k); if (!s) return;
+        var c = contadorDe(s), n = typeof c === "object" ? c.n : c;
+        var o = el("option", { value: s.key, texto: s.titulo + (n ? " (" + n + ")" : "") });
+        if (s.key === actual) o.selected = true;
+        destino.appendChild(o);
+      });
+      if (destino !== sel) sel.appendChild(destino);
     });
     sel.addEventListener("change", function () { irA(sel.value); });
     nav.appendChild(sel);
-    // Computadora: lista de pestañas
-    SECCIONES.forEach(function (s) {
-      var c = contadorDe(s), n = typeof c === "object" ? c.n : c;
-      nav.appendChild(el("button", {
-        class: "pestana", role: "tab", "aria-selected": s.key === actual ? "true" : "false", "data-key": s.key,
-        onclick: function () { irA(s.key); }
-      }, [s.titulo, n ? el("span", { class: "pestana__n" + (c.alerta ? " pestana__n--alerta" : ""), texto: String(n) }) : null]));
+    // Computadora: menú lateral agrupado
+    GRUPOS.forEach(function (g) {
+      if (g.nombre) nav.appendChild(el("span", { class: "pestanas__grupo", texto: g.nombre }));
+      g.keys.forEach(function (k) {
+        var s = seccionDe(k); if (!s) return;
+        var c = contadorDe(s), n = typeof c === "object" ? c.n : c;
+        nav.appendChild(el("button", {
+          class: "pestana", role: "tab", "aria-selected": s.key === actual ? "true" : "false", "data-key": s.key,
+          onclick: function () { irA(s.key); }
+        }, [s.titulo, n ? el("span", { class: "pestana__n" + (c.alerta ? " pestana__n--alerta" : ""), texto: String(n) }) : null]));
+      });
     });
     var esp = indicadorEspacio();
     if (esp) nav.appendChild(esp);
@@ -538,6 +568,7 @@
     }
     if (s.tipo === "albumes") return pintarAlbumes(panel, s);
     if (s.tipo === "visitas") return pintarVisitas(panel, s);
+    if (s.tipo === "resumen") return pintarResumen(panel, s);
     if (s.tipo === "sugerencias") return pintarSugerencias(panel, s);
 
     panel.appendChild(el("h2", { texto: s.titulo }));
@@ -546,6 +577,12 @@
     if (s.tipo === "lista") {
       if (!Array.isArray(datos[s.key])) datos[s.key] = [];
       panel.appendChild(lista(datos, s.key, s));
+      // Acceso rápido desde 🏠 Inicio: añade un elemento nuevo al abrir.
+      if (anadirAlAbrir === s.key) {
+        anadirAlAbrir = null;
+        var b = panel.querySelector(".lista__barra .btn--azul");
+        if (b) b.click();
+      }
       return;
     }
     if (!datos[s.key] || typeof datos[s.key] !== "object") datos[s.key] = {};
@@ -1243,6 +1280,102 @@
     panel.appendChild(rejilla);
   }
 
+  // ---------- 🏠 Inicio (tablero) ----------
+  var anadirAlAbrir = null;   // pestaña donde se añade un elemento nuevo al abrirla
+
+  function tarjeta(titulo, cuerpo, accion) {
+    return el("div", { class: "tablero__tarjeta" }, [
+      el("span", { class: "tablero__titulo", texto: titulo }),
+      cuerpo,
+      accion || null
+    ]);
+  }
+
+  function pintarResumen(panel, s) {
+    var cap = datos.capitulo || {};
+    panel.appendChild(el("div", { class: "panel__cabeza" }, [
+      el("h2", { texto: "¡Hola! 👋" }),
+      el("p", { class: "ayuda", texto: "Este es el resumen de la página de " + (cap.nombre || "FBLA 3281") + ". ¿Qué quieres hacer hoy?" })
+    ]));
+
+    // Accesos rápidos
+    var rapidos = el("div", { class: "tablero__rapidos" });
+    [["📢", "Nuevo anuncio", "anuncios", true], ["📅", "Nuevo evento", "eventos", true], ["🏆", "Nuevo logro", "logros", true],
+     ["📸", "Subir fotos", "albumes", false], ["📄", "Nuevo documento", "documentos", true]].forEach(function (r) {
+      rapidos.appendChild(el("button", { type: "button", class: "rapido",
+        onclick: function () { if (r[3]) anadirAlAbrir = r[2]; irA(r[2]); } }, [
+        el("span", { class: "rapido__icono", texto: r[0] }), el("span", { texto: r[1] })
+      ]));
+    });
+    panel.appendChild(rapidos);
+
+    var rejilla = el("div", { class: "tablero" });
+
+    // Próximo evento
+    var ahora = new Date(), prox = null;
+    (datos.eventos || []).forEach(function (e) {
+      var st = FX.estado(e, ahora);
+      if ((st.tipo === "futuro" || st.tipo === "manana" || st.tipo === "hoy") && (!prox || st.dias < prox.st.dias)) prox = { e: e, st: st };
+    });
+    rejilla.appendChild(tarjeta("📅 Próximo evento", prox
+      ? el("div", null, [el("strong", { class: "tablero__grande", texto: prox.e.nombre || "Evento" }),
+          el("span", { class: "tablero__sub", texto: FX.texto(prox.e) + " · " + (prox.st.tipo === "hoy" ? "¡Es hoy!" : prox.st.tipo === "manana" ? "¡Es mañana!" : "faltan " + prox.st.dias + " días") })])
+      : el("span", { class: "tablero__sub", texto: "No hay eventos con fecha próxima." }),
+      el("button", { type: "button", class: "btn btn--borde btn--chico", onclick: function () { irA("eventos"); } }, ["Ver eventos"])));
+
+    // Pendientes de revisar
+    var nSug = sugerencias ? sugerencias.filter(function (x) { return !x.estado; }).length : modo === "github" ? null : "—";
+    var nFotos = pendientes ? pendientes.filter(function (x) { return x.estado === "pendiente"; }).length : modo === "github" ? null : "—";
+    var pend = el("div", { class: "tablero__lista" }, [
+      el("button", { type: "button", class: "tablero__fila", onclick: function () { irA("_sugerencias"); } }, [
+        el("span", { texto: "💡 Sugerencias de Instagram" }),
+        el("strong", { class: nSug ? "tablero__num tablero__num--alerta" : "tablero__num", texto: nSug === null ? "…" : String(nSug) })
+      ]),
+      el("button", { type: "button", class: "tablero__fila", onclick: function () { irA("subidas"); } }, [
+        el("span", { texto: "📤 Fotos de miembros" }),
+        el("strong", { class: nFotos ? "tablero__num tablero__num--alerta" : "tablero__num", texto: nFotos === null ? "…" : String(nFotos) })
+      ])
+    ]);
+    rejilla.appendChild(tarjeta("🔔 Esperando tu revisión", pend));
+
+    // Visitas
+    var vis = el("div", null, [el("span", { class: "tablero__sub", texto: "Cargando…" })]);
+    rejilla.appendChild(tarjeta("📊 Visitas", vis,
+      el("button", { type: "button", class: "btn btn--borde btn--chico", onclick: function () { irA("_visitas"); } }, ["Ver detalle"])));
+    if (modo === "github" && urlScript()) {
+      (visitasCache ? Promise.resolve(visitasCache) : script("visitas")).then(function (r) {
+        visitasCache = r;
+        var v = r.visitas || { dias: {} }, hoy = FX.deISO(r.hoy) || new Date(), siete = 0;
+        for (var i = 0; i < 7; i++) { var d = new Date(hoy); d.setDate(d.getDate() - i); siete += v.dias[FX.aISO(d)] || 0; }
+        vis.innerHTML = "";
+        vis.appendChild(el("div", { class: "tablero__cifras" }, [
+          el("div", null, [el("strong", { class: "tablero__grande", texto: String(v.dias[FX.aISO(hoy)] || 0) }), el("span", { class: "tablero__sub", texto: "hoy" })]),
+          el("div", null, [el("strong", { class: "tablero__grande", texto: String(siete) }), el("span", { class: "tablero__sub", texto: "últimos 7 días" })]),
+          el("div", null, [el("strong", { class: "tablero__grande", texto: String(v.total || 0) }), el("span", { class: "tablero__sub", texto: "en total" })])
+        ]));
+      }).catch(function () { vis.innerHTML = ""; vis.appendChild(el("span", { class: "tablero__sub", texto: "No disponible ahora." })); });
+    } else {
+      vis.innerHTML = ""; vis.appendChild(el("span", { class: "tablero__sub", texto: "Disponible al entrar con tu llave." }));
+    }
+
+    // Contenido de la página
+    var cuenta = function (k) { return (datos[k] || []).length; };
+    rejilla.appendChild(tarjeta("📚 En la página", el("div", { class: "tablero__lista" }, [
+      ["📢 Anuncios", "anuncios"], ["📅 Eventos", "eventos"], ["🏆 Logros", "logros"], ["📸 Álbumes", "albumes"], ["📄 Documentos", "documentos"]
+    ].map(function (x) {
+      return el("button", { type: "button", class: "tablero__fila", onclick: function () { irA(x[1]); } }, [
+        el("span", { texto: x[0] }), el("strong", { class: "tablero__num", texto: String(cuenta(x[1])) })
+      ]);
+    }))));
+
+    // Espacio
+    var esp = indicadorEspacio();
+    if (esp) rejilla.appendChild(tarjeta("💾 Espacio en GitHub", esp));
+
+    panel.appendChild(rejilla);
+    panel.appendChild(el("p", { class: "campo__nota", style: "margin-top:18px", texto: "Atajo: Ctrl + S guarda los cambios." }));
+  }
+
   // ---------- Sugerencias de Instagram ----------
   var sugerencias = null;          // lista que devuelve el script
   var sugerenciasInfo = {};
@@ -1806,7 +1939,7 @@
       rutasOriginales = usadas;
       hayCambios = false;
       $("guardar").disabled = true;
-      $("estado").textContent = "Todo guardado";
+      fijarEstado("ok");
       avisar("¡Guardado! La página se actualiza en 1 o 2 minutos.");
       // 3) Avisar al script de Google cuáles fotos de miembros se aprobaron.
       var confirmar = aprobadas.slice();

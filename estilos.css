@@ -296,6 +296,17 @@ a { color: var(--blue); }
 button.boton { border: 0; cursor: pointer; font: inherit; font-weight: 700; }
 button.boton:disabled { opacity: .7; cursor: progress; transform: none; }
 
+/* Invitación a subir fotos dentro del álbum */
+.album-subir {
+  display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  margin: 18px 0 8px; padding: 16px 18px; border-radius: var(--radio);
+  background: #fff7e6; border: 1.5px solid var(--gold);
+}
+.album-subir__icono { font-size: 2rem; }
+.album-subir div { flex: 1 1 260px; display: flex; flex-direction: column; }
+.album-subir strong { color: var(--navy); font-size: 1.05rem; }
+.album-subir span { color: var(--texto-suave); font-size: .92rem; }
+
 /* ---------- Visor de fotos ---------- */
 .visor {
   position: fixed; inset: 0; z-index: 40; background: rgba(8, 18, 40, .95);

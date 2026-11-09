@@ -372,6 +372,62 @@
     x.fillText(location.host || "fbladcg.github.io", W / 2, H - 56);
   }
 
+  // Hasta 4 fotos del álbum (la portada primero) para la imagen de compartir.
+  function prepararFotosAlbum(a) {
+    var fotos = fotosDe(a).map(function (f) { return f.foto; });
+    var portada = a.portada && fotos.indexOf(a.portada) >= 0 ? a.portada : fotos[0];
+    var elegidas = [portada].concat(fotos.filter(function (f) { return f !== portada; })).slice(0, 4);
+    return Promise.all(elegidas.map(function (f) { return cargarImagen(enlaceSeguro(f)); }))
+      .then(function (imgs) { return imgs.filter(Boolean); });
+  }
+
+  // Dibuja una imagen recortada para llenar un rectángulo (como object-fit: cover).
+  function dibujarCubriendo(x, img, dx, dy, dw, dh) {
+    var r = Math.max(dw / img.width, dh / img.height);
+    var sw = dw / r, sh = dh / r;
+    x.drawImage(img, (img.width - sw) / 2, (img.height - sh) / 2, sw, sh, dx, dy, dw, dh);
+  }
+
+  function dibujarTarjetaAlbum(a, emblema, fotos) {
+    var W = 1080, H = 1350, base = lienzoBase(W, H), x = base.x;
+    fotos = fotos || [];
+    // Collage de fotos arriba (1, 2 o 4)
+    var top = 0, alto = 760, g = 8;
+    if (fotos.length >= 4) {
+      var w2 = (W - g) / 2, h2 = (alto - g) / 2;
+      dibujarCubriendo(x, fotos[0], 0, top, w2, h2); dibujarCubriendo(x, fotos[1], w2 + g, top, w2, h2);
+      dibujarCubriendo(x, fotos[2], 0, top + h2 + g, w2, h2); dibujarCubriendo(x, fotos[3], w2 + g, top + h2 + g, w2, h2);
+    } else if (fotos.length >= 2) {
+      var w = (W - g) / 2;
+      dibujarCubriendo(x, fotos[0], 0, top, w, alto); dibujarCubriendo(x, fotos[1], w + g, top, w, alto);
+    } else if (fotos.length === 1) {
+      dibujarCubriendo(x, fotos[0], 0, top, W, alto);
+    }
+    // Degradado para que el texto se lea
+    var dg = x.createLinearGradient(0, alto - 260, 0, alto);
+    dg.addColorStop(0, "rgba(10,46,127,0)"); dg.addColorStop(1, "rgba(10,46,127,1)");
+    x.fillStyle = dg; x.fillRect(0, alto - 260, W, 260);
+    x.fillStyle = "#f4ab19"; x.fillRect(0, alto, W, 8);
+    if (emblema) x.drawImage(emblema, W - 170, 30, 140, 140);
+    x.textAlign = "center";
+    x.fillStyle = "#f4ab19"; x.font = "700 38px " + FUENTE;
+    x.fillText("📸 ÁLBUM DE FOTOS", W / 2, alto + 80);
+    x.fillStyle = "#ffffff"; x.font = "700 66px " + FUENTE;
+    var y = alto + 165;
+    lineas(x, a.titulo || "Álbum", W - 160, 2).forEach(function (l) { x.fillText(l, W / 2, y); y += 76; });
+    x.font = "36px " + FUENTE; x.fillStyle = "rgba(255,255,255,.9)";
+    var n = fotosDe(a).length;
+    var meta = [a.fecha, n + (n === 1 ? " foto" : " fotos")].filter(Boolean).join(" · ");
+    x.fillText(meta, W / 2, y + 10);
+    // Pie reducido (el collage ocupa más espacio)
+    var cap = DATOS.capitulo || {};
+    x.fillStyle = "#ffffff"; x.font = "700 32px " + FUENTE;
+    x.fillText(String(cap.nombre || "FBLA").split(/\s+[-–—]\s+/)[0] + " · " + (cap.escuela || ""), W / 2, H - 80);
+    x.fillStyle = "#f4ab19"; x.font = "700 30px " + FUENTE;
+    x.fillText(location.host || "fbladcg.github.io", W / 2, H - 40);
+    return base.c;
+  }
+
   function dibujarTarjetaAnuncio(a, emblema) {
     var W = 1080, H = 1350, base = lienzoBase(W, H), x = base.x;
     if (emblema) x.drawImage(emblema, W / 2 - 130, 120, 260, 260);
@@ -452,12 +508,12 @@
     return c;
   }
 
-  function compartirImagen(dibujar, titulo, mensaje, boton) {
+  function compartirImagen(dibujar, titulo, mensaje, boton, precarga) {
     var texto = boton.textContent;
     boton.disabled = true;
     boton.textContent = "Preparando imagen…";
-    cargarImagen("img/emblema-512.png").then(function (emblema) {
-      var lienzo = dibujar(emblema);
+    Promise.all([cargarImagen("img/emblema-512.png"), precarga || Promise.resolve(null)]).then(function (r) {
+      var lienzo = dibujar(r[0], r[1]);
       return new Promise(function (ok) { lienzo.toBlob(ok, "image/png"); });
     }).then(function (blob) {
       var nombre = String(titulo).normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^\w]+/g, "-").replace(/^-|-$/g, "").toLowerCase().slice(0, 60) + ".png";
@@ -689,13 +745,19 @@
       '<div class="album-vista__barra"><div class="contenedor album-vista__fila">' +
       '<a class="boton boton--claro" href="#albumes">← Álbumes</a>' +
       '<div class="album-vista__acciones">' +
-      (albumRecibeFotos(a) ? '<a class="boton boton--claro" href="subir.html?album=' + encodeURIComponent(a.id) + '">📤 Subir mis fotos</a>' : "") +
-      '<button class="boton boton--acento" type="button" data-zip title="Descarga cada foto por separado (JPG o PNG)">⬇ Descargar todas</button>' +
+      '<button class="boton boton--claro" type="button" data-compartir-album title="Crea una imagen del álbum para WhatsApp o Instagram">🔗 Compartir álbum</button>' +
+      '<button class="boton boton--acento" type="button" data-zip title="Descarga cada foto por separado">⬇ Descargar todas</button>' +
       "</div></div></div>" +
       '<div class="contenedor album-vista__cuerpo">' +
       "<h2>" + t(a.titulo) + "</h2>" +
-      (meta ? '<p class="album-vista__meta">' + meta + "</p>" : "") +
+      (meta ? '<p class="album-vista__meta">' + meta + " · " + fotosAbiertas.length + (fotosAbiertas.length === 1 ? " foto" : " fotos") + "</p>" : "") +
       (a.descripcion ? '<p class="album-vista__desc">' + t(a.descripcion) + "</p>" : "") +
+      // Invitación a subir fotos (solo si el álbum las acepta)
+      (albumRecibeFotos(a)
+        ? '<div class="album-subir"><span class="album-subir__icono" aria-hidden="true">📷</span>' +
+          '<div><strong>¿Tienes fotos de este evento?</strong><span>Envíalas y, cuando la directiva las apruebe, saldrán aquí con tu nombre.</span></div>' +
+          '<a class="boton boton--acento" href="subir.html?album=' + encodeURIComponent(a.id) + '">📤 Subir mis fotos</a></div>'
+        : "") +
       '<div class="album-fotos">' + fotosAbiertas.map(function (f, i) {
         return '<button type="button" class="album-foto" data-i="' + i + '" aria-label="Ver foto ' + (i + 1) + '">' +
           '<img src="' + t(enlaceSeguro(f.foto)) + '" alt="' + t(f.descripcion || "") + '" loading="lazy"></button>';
@@ -708,6 +770,9 @@
       var b = e.target.closest("[data-i]");
       if (b) abrirVisor(Number(b.getAttribute("data-i")));
       if (e.target.closest("[data-zip]")) descargarTodas(a, e.target.closest("[data-zip]"));
+      var comp = e.target.closest("[data-compartir-album]");
+      if (comp) compartirImagen(function (emb, fotos) { return dibujarTarjetaAlbum(a, emb, fotos); }, a.titulo || "album",
+        "📸 " + (a.titulo || "Álbum") + (a.fecha ? " — " + a.fecha : "") + "\n" + location.origin + location.pathname + "#album/" + encodeURIComponent(a.id), comp, prepararFotosAlbum(a));
     });
     var volver = vista.querySelector(".boton--claro");
     if (volver) volver.focus();
