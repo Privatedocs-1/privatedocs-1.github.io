@@ -9,6 +9,7 @@
   var app = document.getElementById("app");
   var menu = document.getElementById("menu");
   var pie = document.getElementById("pie");
+  var DATOS = {};
 
   // Evita que el texto se interprete como código.
   function t(valor) {
@@ -26,6 +27,7 @@
 
   function enlaceSeguro(url) {
     url = String(url || "").trim();
+    if (/^www\./i.test(url)) url = "https://" + url;
     if (/^(https?:|mailto:)/i.test(url) || /^[\w\-./ ]+$/.test(url)) return url;
     return "";
   }
@@ -49,7 +51,35 @@
     );
   }
 
+  // Convierte un enlace de Instagram en su forma oficial, o "" si no es válido.
+  function enlaceInstagram(url) {
+    var m = String(url || "").trim().match(/^(?:https?:\/\/)?(?:www\.)?instagram\.com\/(?:[\w.]+\/)?(p|reel|tv)\/([\w-]+)/i);
+    return m ? "https://www.instagram.com/" + m[1].toLowerCase() + "/" + m[2] + "/" : "";
+  }
+
+  function albumesPublicados() {
+    return lista(DATOS.albumes).filter(function (a) {
+      return a.publicado !== false && a.id && lista(a.fotos).some(function (f) { return f.foto; });
+    });
+  }
+
+  function fotosDe(album) {
+    return lista(album.fotos).filter(function (f) { return f.foto; });
+  }
+
+  function portadaDe(album) {
+    var fotos = fotosDe(album);
+    var p = album.portada && fotos.some(function (f) { return f.foto === album.portada; }) ? album.portada : fotos[0].foto;
+    return enlaceSeguro(p);
+  }
+
+  function subidasActivas() {
+    var s = DATOS.subidas || {};
+    return s.activo === true && /^https:\/\/script\.google\.com\//.test(String(s.url || ""));
+  }
+
   function construir(d) {
+    DATOS = d;
     var cap = d.capitulo || {};
     document.title = (cap.nombre || "FBLA") + " — " + (cap.escuela || "");
     document.getElementById("marca-texto").textContent = cap.nombre || "FBLA";
@@ -63,6 +93,7 @@
     var nav = [];
     var unete = d.unete || {};
     var unirseActivo = unete.activo !== false && unete.enlace;
+    var c = d.contacto || {};
 
     // ---- Portada ----
     var fondo = cap.foto_portada
@@ -98,7 +129,7 @@
         '<div class="rejilla rejilla--2">' + anuncios.map(function (a) {
           return '<article class="tarjeta anuncio">' +
             (a.fecha ? '<p class="etiqueta">' + t(a.fecha) + "</p>" : "") +
-            "<h3>" + t(a.titulo) + "</h3><p>" + t(a.texto) + "</p></article>";
+            "<h3>" + t(a.titulo) + "</h3>" + (a.texto ? "<p>" + t(a.texto) + "</p>" : "") + "</article>";
         }).join("") + "</div>", "seccion--gris");
       nav.push(["anuncios", "Anuncios"]);
     }
@@ -141,15 +172,34 @@
       nav.push(["logros", "Logros"]);
     }
 
-    // ---- Galería ----
-    var galeria = lista(d.galeria).filter(function (g) { return g.foto; });
-    if (galeria.length) {
-      html += seccion("galeria", "Galería",
-        '<div class="galeria">' + galeria.map(function (g) {
-          return '<figure><img src="' + t(enlaceSeguro(g.foto)) + '" alt="' + t(g.descripcion) + '" loading="lazy">' +
-            (g.descripcion ? "<figcaption>" + t(g.descripcion) + "</figcaption>" : "") + "</figure>";
+    // ---- Álbumes de fotos ----
+    var albumes = albumesPublicados();
+    if (albumes.length) {
+      html += seccion("albumes", "Álbumes de fotos",
+        '<div class="albumes">' + albumes.map(function (a) {
+          var meta = [a.fecha, a.lugar].filter(Boolean).map(t).join(" · ");
+          var n = fotosDe(a).length;
+          return '<a class="album-tarjeta" href="#album/' + encodeURIComponent(a.id) + '">' +
+            '<div class="album-tarjeta__img"><img src="' + t(portadaDe(a)) + '" alt="" loading="lazy">' +
+            '<span class="album-tarjeta__n">' + n + (n === 1 ? " foto" : " fotos") + "</span></div>" +
+            '<div class="album-tarjeta__info"><h3>' + t(a.titulo) + "</h3>" +
+            (meta ? "<p>" + meta + "</p>" : "") + "</div></a>";
         }).join("") + "</div>", "seccion--gris");
-      nav.push(["galeria", "Galería"]);
+      nav.push(["albumes", "Fotos"]);
+    }
+
+    // ---- Instagram ----
+    var ig = d.instagram || {};
+    var posts = lista(ig.publicaciones).map(function (p) { return enlaceInstagram(p.enlace); }).filter(Boolean);
+    if (posts.length) {
+      var perfil = enlaceSeguro(c.instagram);
+      html += seccion("instagram", ig.titulo || "Síguenos en Instagram",
+        '<div class="instagram">' + posts.map(function (url) {
+          return '<div class="instagram__post"><blockquote class="instagram-media" data-instgrm-permalink="' + t(url) +
+            '?utm_source=ig_embed" data-instgrm-version="14"><a href="' + t(url) + '" target="_blank" rel="noopener">Ver esta publicación en Instagram</a></blockquote></div>';
+        }).join("") + "</div>" +
+        (perfil ? '<p class="instagram__mas"><a class="boton boton--borde" href="' + t(perfil) + '" target="_blank" rel="noopener">Ver más en Instagram</a></p>' : ""));
+      nav.push(["instagram", "Instagram"]);
     }
 
     // ---- Únete ----
@@ -162,7 +212,6 @@
     }
 
     // ---- Contacto ----
-    var c = d.contacto || {};
     var redes = [
       ["Instagram", c.instagram], ["Facebook", c.facebook], ["TikTok", c.tiktok]
     ].filter(function (r) { return r[1]; });
@@ -183,7 +232,195 @@
     pie.innerHTML = "<p>© " + new Date().getFullYear() + " " + t(cap.nombre) + " · " + t(cap.escuela) + "</p>" +
       '<p class="pie__nota">Capítulo local de Future Business Leaders of America.</p>' +
       '<p class="pie__nota"><a href="admin.html" class="pie__editar">Panel de edición</a></p>';
+
+    if (posts.length) cargarInstagram();
+    revisarRuta();
   }
+
+  // ---------- Instagram ----------
+  function cargarInstagram() {
+    if (window.instgrm) { window.instgrm.Embeds.process(); return; }
+    var s = document.createElement("script");
+    s.async = true;
+    s.src = "https://www.instagram.com/embed.js";
+    document.body.appendChild(s);
+  }
+
+  // ---------- Vista de un álbum ----------
+  var vista = null;      // contenedor del álbum abierto
+  var visor = null;      // visor de una foto
+  var fotosAbiertas = [];
+  var posVisor = 0;
+  var scrollAntes = 0;
+
+  function revisarRuta() {
+    var m = location.hash.match(/^#album\/(.+)$/);
+    if (m) {
+      var id = decodeURIComponent(m[1]);
+      var album = albumesPublicados().filter(function (a) { return String(a.id) === id; })[0];
+      if (album) return abrirAlbum(album);
+    }
+    cerrarAlbum();
+  }
+
+  function nombreArchivo(ruta) {
+    return String(ruta).split("/").pop();
+  }
+
+  function abrirAlbum(a) {
+    cerrarVisor();
+    if (!vista) scrollAntes = window.scrollY;
+    if (vista) vista.remove();
+    fotosAbiertas = fotosDe(a);
+    var meta = [a.fecha, a.lugar].filter(Boolean).map(t).join(" · ");
+    vista = document.createElement("div");
+    vista.className = "album-vista";
+    vista.setAttribute("role", "dialog");
+    vista.setAttribute("aria-modal", "true");
+    vista.setAttribute("aria-label", a.titulo || "Álbum");
+    vista.innerHTML =
+      '<div class="album-vista__barra"><div class="contenedor album-vista__fila">' +
+      '<a class="boton boton--claro" href="#albumes">← Álbumes</a>' +
+      '<div class="album-vista__acciones">' +
+      (subidasActivas() ? '<a class="boton boton--claro" href="subir.html?album=' + encodeURIComponent(a.id) + '">📤 Subir mis fotos</a>' : "") +
+      '<button class="boton boton--acento" type="button" data-zip title="Descarga cada foto por separado (JPG o PNG)">⬇ Descargar todas</button>' +
+      "</div></div></div>" +
+      '<div class="contenedor album-vista__cuerpo">' +
+      "<h2>" + t(a.titulo) + "</h2>" +
+      (meta ? '<p class="album-vista__meta">' + meta + "</p>" : "") +
+      (a.descripcion ? '<p class="album-vista__desc">' + t(a.descripcion) + "</p>" : "") +
+      '<div class="album-fotos">' + fotosAbiertas.map(function (f, i) {
+        return '<button type="button" class="album-foto" data-i="' + i + '" aria-label="Ver foto ' + (i + 1) + '">' +
+          '<img src="' + t(enlaceSeguro(f.foto)) + '" alt="' + t(f.descripcion || "") + '" loading="lazy"></button>';
+      }).join("") + "</div></div>";
+    document.body.appendChild(vista);
+    document.body.classList.add("sin-scroll");
+    vista.scrollTop = 0;
+
+    vista.addEventListener("click", function (e) {
+      var b = e.target.closest("[data-i]");
+      if (b) abrirVisor(Number(b.getAttribute("data-i")));
+      if (e.target.closest("[data-zip]")) descargarTodas(a, e.target.closest("[data-zip]"));
+    });
+    var volver = vista.querySelector(".boton--claro");
+    if (volver) volver.focus();
+  }
+
+  function cerrarAlbum() {
+    cerrarVisor();
+    if (!vista) return;
+    vista.remove();
+    vista = null;
+    document.body.classList.remove("sin-scroll");
+    var sec = document.getElementById("albumes");
+    if (location.hash === "#albumes" && sec) sec.scrollIntoView();
+    else window.scrollTo(0, scrollAntes);
+  }
+
+  // ---------- Visor de fotos ----------
+  function abrirVisor(i) {
+    posVisor = i;
+    if (!visor) {
+      visor = document.createElement("div");
+      visor.className = "visor";
+      visor.setAttribute("role", "dialog");
+      visor.setAttribute("aria-modal", "true");
+      visor.innerHTML =
+        '<button class="visor__btn visor__cerrar" type="button" aria-label="Cerrar">✕</button>' +
+        '<button class="visor__btn visor__ant" type="button" aria-label="Foto anterior">‹</button>' +
+        '<figure class="visor__fig"><img alt=""><figcaption></figcaption></figure>' +
+        '<button class="visor__btn visor__sig" type="button" aria-label="Foto siguiente">›</button>' +
+        '<div class="visor__pie"><span class="visor__cuenta"></span>' +
+        '<a class="boton boton--acento visor__descargar" download>⬇ Descargar</a></div>';
+      document.body.appendChild(visor);
+      visor.querySelector(".visor__cerrar").addEventListener("click", cerrarVisor);
+      visor.querySelector(".visor__ant").addEventListener("click", function () { moverVisor(-1); });
+      visor.querySelector(".visor__sig").addEventListener("click", function () { moverVisor(1); });
+      visor.addEventListener("click", function (e) { if (e.target === visor) cerrarVisor(); });
+      var x0 = null;
+      visor.addEventListener("touchstart", function (e) { x0 = e.touches[0].clientX; }, { passive: true });
+      visor.addEventListener("touchend", function (e) {
+        if (x0 === null) return;
+        var dx = e.changedTouches[0].clientX - x0;
+        if (Math.abs(dx) > 50) moverVisor(dx < 0 ? 1 : -1);
+        x0 = null;
+      });
+    }
+    pintarVisor();
+    visor.querySelector(".visor__cerrar").focus();
+  }
+
+  function pintarVisor() {
+    var f = fotosAbiertas[posVisor];
+    var src = enlaceSeguro(f.foto);
+    visor.querySelector("img").src = src;
+    visor.querySelector("img").alt = f.descripcion || "";
+    var pie = [f.descripcion, f.autor ? "📷 " + f.autor : ""].filter(Boolean).join(" · ");
+    visor.querySelector("figcaption").textContent = pie;
+    visor.querySelector(".visor__cuenta").textContent = (posVisor + 1) + " de " + fotosAbiertas.length;
+    var d = visor.querySelector(".visor__descargar");
+    d.href = src;
+    d.setAttribute("download", nombreArchivo(src));
+    var varias = fotosAbiertas.length > 1;
+    visor.querySelector(".visor__ant").hidden = !varias;
+    visor.querySelector(".visor__sig").hidden = !varias;
+  }
+
+  function moverVisor(paso) {
+    posVisor = (posVisor + paso + fotosAbiertas.length) % fotosAbiertas.length;
+    pintarVisor();
+  }
+
+  function cerrarVisor() {
+    if (!visor) return;
+    visor.remove();
+    visor = null;
+  }
+
+  document.addEventListener("keydown", function (e) {
+    if (visor) {
+      if (e.key === "Escape") cerrarVisor();
+      else if (e.key === "ArrowRight") moverVisor(1);
+      else if (e.key === "ArrowLeft") moverVisor(-1);
+    } else if (vista && e.key === "Escape") {
+      location.hash = "albumes";
+    }
+  });
+
+  // ---------- Descargar todas (cada foto en su formato: JPG o PNG) ----------
+  function esperar(ms) { return new Promise(function (ok) { setTimeout(ok, ms); }); }
+
+  function descargarTodas(album, boton) {
+    if (boton.disabled) return;
+    var textoOriginal = boton.textContent;
+    var fotos = fotosDe(album);
+    boton.disabled = true;
+    fotos.reduce(function (p, f, i) {
+      return p.then(function () {
+        boton.textContent = "Descargando " + (i + 1) + " de " + fotos.length + "…";
+        return fetch(enlaceSeguro(f.foto)).then(function (r) {
+          if (!r.ok) throw new Error("No se pudo bajar " + nombreArchivo(f.foto));
+          return r.blob();
+        }).then(function (b) {
+          var a = document.createElement("a");
+          a.href = URL.createObjectURL(b);
+          a.download = nombreArchivo(f.foto);
+          document.body.appendChild(a);
+          a.click();
+          a.remove();
+          setTimeout(function () { URL.revokeObjectURL(a.href); }, 20000);
+          return esperar(600);   // pausa para que el navegador acepte varias descargas
+        });
+      });
+    }, Promise.resolve()).catch(function (e) {
+      alert("No se pudieron descargar las fotos. " + e.message);
+    }).then(function () {
+      boton.disabled = false;
+      boton.textContent = textoOriginal;
+    });
+  }
+
+  window.addEventListener("hashchange", revisarRuta);
 
   function mostrarError(mensaje) {
     app.innerHTML =
