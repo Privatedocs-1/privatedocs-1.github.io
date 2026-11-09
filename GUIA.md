@@ -29,7 +29,9 @@ todo se hace con formularios en el **Panel de edición**.
 | 📸 **Álbumes de fotos** | Crear un álbum por evento, subir fotos, escoger la portada y publicarlo |
 | 📤 **Fotos de miembros** | Aprobar o rechazar fotos que envían los miembros |
 | 👥 **Directiva** | Añadir o quitar oficiales y subir sus fotos |
-| 🏆 **Logros** | Añadir o quitar premios |
+| 🏆 **Logros** | Añadir o quitar premios, con su **competencia de FBLA** (lista oficial) y su **año académico**. En la página salen desplegables por año; el año actual se ve abierto. |
+| 💡 **Sugerencias de Instagram** | Cada día se proponen eventos y logros sacados de Instagram. Revísalos, edítalos y apruébalos o descártalos. |
+| 📊 **Visitas** | Cuántas personas visitan la página (una vez por día por navegador; los administradores no cuentan). |
 | 📷 **Instagram** | Escoger qué publicaciones de Instagram salen en la página |
 | 🏫 **Información general** | Nombre, escuela, lema, foto de portada y logo |
 | ℹ️ **Sobre nosotros** | Descripción y los números grandes |
