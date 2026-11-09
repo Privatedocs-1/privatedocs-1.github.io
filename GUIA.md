@@ -76,11 +76,10 @@ Los miembros pueden enviar fotos desde **https://fbladcg.github.io/subir.html**
 Las fotos **no se publican solas**: llegan a una carpeta privada de Google Drive y esperan tu aprobación.
 
 **Para aprobar:**
-1. Ve a **📤 Fotos de miembros**.
-2. La primera vez, escribe la **Clave de aprobación** (te la da quien instaló el script).
-3. Haz clic en **🔄 Buscar fotos nuevas**.
-4. En cada foto: revisa el álbum escogido y haz clic en **✓ Aprobar** o **✕ Rechazar**.
-5. Dale a **💾 Guardar cambios**. Las aprobadas se publican con el crédito «📷 Nombre».
+1. Ve a **📤 Fotos de miembros** y haz clic en **🔄 Buscar fotos nuevas**.
+   (No hace falta ninguna clave extra: el script comprueba con GitHub que tu token tiene permiso.)
+2. En cada foto: revisa el álbum escogido y haz clic en **✓ Aprobar** o **✕ Rechazar**.
+3. Dale a **💾 Guardar cambios**. Las aprobadas se publican con el crédito «📷 Nombre».
 
 - Las rechazadas se borran (van a la papelera de Drive).
 - Las aprobadas quedan también como respaldo en Drive, en la carpeta **Aprobadas**.
@@ -114,7 +113,7 @@ La primera de la lista sale primero. Recomendado: entre 3 y 6 publicaciones.
 |---|---|
 | «La llave (token) no es válida o ya expiró» | Pide una llave nueva (parte B abajo). |
 | «Alguien más guardó cambios hace poco» | Otra persona guardó al mismo tiempo. Recarga el panel y vuelve a hacer tu cambio. |
-| «La clave de aprobación no es correcta» | Revisa la clave en 📤 Fotos de miembros. |
+| «No autorizado: tu token de GitHub no tiene permiso…» | El token no puede editar la página. Pide uno nuevo (parte B abajo). |
 | «No se pudo conectar con el script de Google» | Revisa el enlace del script (debe terminar en `/exec`). |
 | La página pública no cambió | Espera 2 minutos y recarga. |
 
@@ -146,9 +145,11 @@ Las fotos pendientes se guardan en el Google Drive de esa cuenta, en la carpeta
 1. Entra a **https://script.google.com** → **Nuevo proyecto**. Ponle de nombre «FBLA 3281 Fotos».
 2. Borra lo que haya en `Código.gs` y pega **todo** el contenido del archivo
    [`google-script/Codigo.gs`](google-script/Codigo.gs). Guarda (💾).
-3. **⚙ Configuración del proyecto** → baja a **Propiedades de la secuencia de comandos** → **Añadir propiedad**:
-   - `CLAVE_ADMIN` = una clave secreta larga (solo la saben la VP de Mercadeo y el admin).
-   - `CODIGO_MIEMBROS` = un código sencillo para los miembros (ej.: una palabra que se diga en las reuniones).
+3. **(Opcional)** Si quieres que los miembros escriban un código para enviar fotos:
+   **⚙ Configuración del proyecto** → **Propiedades de la secuencia de comandos** → **Añadir propiedad**
+   → `CODIGO_MIEMBROS` = una palabra sencilla que se diga en las reuniones.
+   Si no la añades, el formulario no pide código (igual nada se publica sin tu aprobación).
+   Para aprobar no hace falta ninguna clave: el script verifica con GitHub el token de quien entra al panel.
 4. Arriba a la derecha: **Implementar** → **Nueva implementación** → tipo ⚙ **Aplicación web**:
    - **Ejecutar como:** Yo
    - **Quién tiene acceso:** Cualquier persona

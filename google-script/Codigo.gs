@@ -8,33 +8,34 @@
  *
  *  INSTALACIÓN (una sola vez): ver GUIA.md, parte D.
  *
- *  Configuración (Configuración del proyecto ⚙ → Propiedades
- *  de la secuencia de comandos):
- *    CLAVE_ADMIN      = clave secreta para aprobar fotos (obligatoria)
- *    CODIGO_MIEMBROS  = código que se comparte con los miembros (opcional,
- *                       recomendado para evitar fotos de desconocidos)
+ *  ¿Quién puede aprobar? Solo quien entre al panel con un token de
+ *  GitHub que tenga permiso para escribir en el repositorio de la
+ *  página. El script se lo pregunta a GitHub; no hay claves extra.
+ *
+ *  Opcional (Configuración del proyecto ⚙ → Propiedades de la
+ *  secuencia de comandos):
+ *    CODIGO_MIEMBROS = código que los miembros deben escribir para
+ *                      enviar fotos. Si no existe, no se pide código.
  * =============================================================
  */
 
+var REPO = 'fbladcg/fbladcg.github.io';       // repositorio de la página
 var NOMBRE_CARPETA = 'FBLA 3281 - Fotos de miembros';
-var MAX_BYTES = 8 * 1024 * 1024;   // 8 MB por foto
-var MAX_PENDIENTES = 300;          // límite de fotos esperando aprobación
+var MAX_PENDIENTES = 300;                     // límite de fotos esperando aprobación
 
-function doGet() {
-  return salida({ ok: true, mensaje: 'Servicio de fotos de FBLA 3281 activo.' });
+function doGet(e) {
+  var codigo = PropertiesService.getScriptProperties().getProperty('CODIGO_MIEMBROS');
+  return salida({ ok: true, servicio: 'Fotos de FBLA 3281', pideCodigo: !!(codigo && codigo.trim()) });
 }
 
 function doPost(e) {
   try {
     var d = JSON.parse(e.postData.contents);
-    var props = PropertiesService.getScriptProperties();
     var r;
     if (d.accion === 'subir') {
-      r = subir(d, props);
+      r = subir(d);
     } else {
-      var clave = props.getProperty('CLAVE_ADMIN');
-      if (!clave) throw new Error('Falta configurar CLAVE_ADMIN en el script.');
-      if (String(d.clave || '') !== clave) throw new Error('La clave de aprobación no es correcta.');
+      verificarAdmin(d.token);
       if (d.accion === 'pendientes') r = pendientes();
       else if (d.accion === 'foto') r = foto(d.id);
       else if (d.accion === 'resolver') r = resolver(d.id, d.aprobar === true);
@@ -52,6 +53,33 @@ function salida(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
 }
 
+// Le pregunta a GitHub si el token puede escribir en el repositorio de la página.
+// El resultado se recuerda 10 minutos para no preguntar en cada foto.
+function verificarAdmin(token) {
+  token = String(token || '').trim();
+  if (!token) throw new Error('No autorizado: entra al panel con tu token de GitHub.');
+  var huella = Utilities.base64EncodeWebSafe(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, token));
+  var cache = CacheService.getScriptCache();
+  if (cache.get('ok_' + huella)) return;
+
+  var r = UrlFetchApp.fetch('https://api.github.com/repos/' + REPO, {
+    headers: {
+      Authorization: 'Bearer ' + token,
+      Accept: 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28'
+    },
+    muteHttpExceptions: true
+  });
+  var permisos = null;
+  if (r.getResponseCode() === 200) {
+    try { permisos = JSON.parse(r.getContentText()).permissions; } catch (e) {}
+  }
+  if (!permisos || !(permisos.push || permisos.maintain || permisos.admin)) {
+    throw new Error('No autorizado: tu token de GitHub no tiene permiso para editar la página.');
+  }
+  cache.put('ok_' + huella, '1', 600);
+}
+
 function carpeta(nombre) {
   var raiz = obtener(DriveApp.getRootFolder(), NOMBRE_CARPETA);
   return nombre ? obtener(raiz, nombre) : raiz;
@@ -66,9 +94,9 @@ function limpio(texto, max) {
   return String(texto || '').replace(/[\u0000-\u001f\u007f]/g, ' ').trim().slice(0, max);
 }
 
-function subir(d, props) {
-  var codigo = props.getProperty('CODIGO_MIEMBROS');
-  if (codigo && limpio(d.codigo, 100).toLowerCase() !== codigo.trim().toLowerCase()) {
+function subir(d) {
+  var codigo = PropertiesService.getScriptProperties().getProperty('CODIGO_MIEMBROS');
+  if (codigo && codigo.trim() && limpio(d.codigo, 100).toLowerCase() !== codigo.trim().toLowerCase()) {
     throw new Error('El código del capítulo no es correcto.');
   }
   if (!/^image\/(jpeg|png)$/.test(String(d.tipo))) throw new Error('Solo se aceptan fotos JPG o PNG.');
@@ -84,7 +112,6 @@ function subir(d, props) {
 
     var bytes = Utilities.base64Decode(String(d.datos || ''));
     if (!bytes.length) throw new Error('La foto llegó vacía.');
-    if (bytes.length > MAX_BYTES) throw new Error('La foto es demasiado grande.');
 
     var nombre = Utilities.formatDate(new Date(), 'America/Puerto_Rico', 'yyyyMMdd-HHmmss') + '-' +
       limpio(d.archivo, 60).replace(/[^\w.\-]/g, '_');

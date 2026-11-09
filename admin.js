@@ -267,7 +267,9 @@
   function script(accion, extra) {
     var url = urlScript();
     if (!url) return Promise.reject(new Error("Primero pega el enlace del script de Google (termina en /exec)."));
-    var cuerpo = { accion: accion, clave: ls(CLAVE_LS_APROBAR) || "" };
+    if (modo !== "github" || !sesion.token) return Promise.reject(new Error("Entra al panel con tu token de GitHub para ver las fotos de miembros."));
+    // El script verifica con GitHub que este token puede editar la página.
+    var cuerpo = { accion: accion, token: sesion.token };
     Object.keys(extra || {}).forEach(function (k) { cuerpo[k] = extra[k]; });
     return fetch(url, { method: "POST", body: JSON.stringify(cuerpo) })
       .then(function (r) { return r.json(); }, function () {
@@ -727,22 +729,10 @@
       "En cada álbum de la página también aparece el botón «Subir mis fotos» cuando esta opción está activa y el álbum está publicado."
     ]));
 
-    var idClave = "clave-aprobar";
-    var clave = el("input", { type: "password", id: idClave, autocomplete: "off", placeholder: "La clave que pusiste en el script" });
-    clave.value = ls(CLAVE_LS_APROBAR) || "";
-    clave.addEventListener("change", function () { ls(CLAVE_LS_APROBAR, clave.value.trim() || null); });
-    panel.appendChild(el("div", { class: "campo" }, [
-      el("label", { for: idClave, texto: "Clave de aprobación" }), clave,
-      el("p", { class: "campo__nota", texto: "Es la CLAVE_ADMIN del script. Se guarda solo en esta computadora." })
-    ]));
-
     var zona = el("div", { class: "pendientes" });
     panel.appendChild(el("div", { class: "fila-titulo" }, [
       el("h3", { class: "subtitulo", texto: "Fotos esperando aprobación" }),
-      el("button", { class: "btn btn--azul", type: "button", onclick: function () {
-        ls(CLAVE_LS_APROBAR, clave.value.trim() || null);
-        buscarPendientes(zona);
-      } }, ["🔄 Buscar fotos nuevas"])
+      el("button", { class: "btn btn--azul", type: "button", onclick: function () { buscarPendientes(zona); } }, ["🔄 Buscar fotos nuevas"])
     ]));
     panel.appendChild(zona);
     if (pendientes) pintarPendientes(zona);

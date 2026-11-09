@@ -53,9 +53,11 @@
         <input type="text" id="nombre" maxlength="80" autocomplete="name" required>
         <p class="nota">Aparece como crédito de la foto («📷 Tu nombre»).</p>
 
-        <label for="codigo">Código del capítulo</label>
-        <input type="password" id="codigo" maxlength="100" autocomplete="off">
-        <p class="nota">Te lo da la directiva.</p>
+        <div id="campo-codigo" hidden>
+          <label for="codigo">Código del capítulo</label>
+          <input type="password" id="codigo" maxlength="100" autocomplete="off">
+          <p class="nota">Te lo da la directiva.</p>
+        </div>
 
         <label>Fotos (hasta 10 a la vez)</label>
         <label class="elegir" for="fotos">📷 Toca aquí para escoger fotos<span class="nota" id="cuantas">JPG o PNG</span></label>
@@ -74,6 +76,6 @@
   </main>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
-  <script src="subir.js?v=1"></script>
+  <script src="subir.js?v=2"></script>
 </body>
 </html>

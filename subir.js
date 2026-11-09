@@ -83,6 +83,13 @@
     });
     $("formulario").hidden = false;
 
+    // Pregunta al script si hay que escribir el código del capítulo.
+    fetch(url).then(function (r) { return r.json(); }).then(function (j) {
+      $("campo-codigo").hidden = !(j && j.pideCodigo);
+    }).catch(function () {
+      $("campo-codigo").hidden = false;   // si no se sabe, se muestra por si acaso
+    });
+
     $("fotos").addEventListener("change", function () {
       archivos = Array.prototype.slice.call(this.files || []).slice(0, MAX_FOTOS);
       var cont = $("miniaturas");
