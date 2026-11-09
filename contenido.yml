@@ -23,7 +23,10 @@ sobre_nosotros:
   datos:
     - numero: "232"
       etiqueta: Miembros Activos
-anuncios: []
+anuncios:
+  - titulo: Segundo Pago - Conferencia Estatal de Liderazgo FBLA 2026
+    fecha: 16 de noviembre de 2026
+    texto: ""
 eventos:
   - nombre: Eventos Competitivos FBLA 2026
     fecha: 11 de diciembre de 2026
