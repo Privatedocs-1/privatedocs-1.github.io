@@ -36,7 +36,6 @@ todo se hace con formularios en el **Panel de edición**.
 | 📷 **Instagram** | Escoger qué publicaciones de Instagram salen en la página |
 | 🏫 **Información general** | Nombre, escuela, lema, foto de portada y logo |
 | ℹ️ **Sobre nosotros** | Descripción y los números grandes |
-| ✋ **Únete** | Texto y enlace del formulario de solicitud |
 | ✉️ **Contacto** | Correo y redes sociales |
 
 - **＋ Añadir…**: crea un espacio nuevo para llenar.

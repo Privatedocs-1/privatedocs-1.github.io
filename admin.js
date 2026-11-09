@@ -35,7 +35,7 @@
     { nombre: "Contenido", keys: ["anuncios", "eventos", "logros", "documentos"] },
     { nombre: "Fotos", keys: ["albumes", "subidas"] },
     { nombre: "Instagram", keys: ["_sugerencias", "instagram"] },
-    { nombre: "Página", keys: ["capitulo", "sobre_nosotros", "directiva", "unete", "contacto"] },
+    { nombre: "Página", keys: ["capitulo", "sobre_nosotros", "directiva", "contacto"] },
     { nombre: "Estadísticas", keys: ["_visitas"] }
   ];
 
@@ -154,15 +154,6 @@
             { k: "numero", l: "Número", ph: "45" },
             { k: "etiqueta", l: "Qué representa", ph: "Miembros" }
           ] }
-      ] },
-    { key: "unete", titulo: "✋ Únete", tipo: "objeto",
-      ayuda: "Invitación para nuevos miembros con el enlace al formulario de solicitud.",
-      campos: [
-        { k: "activo", l: "Mostrar el botón de unirse en la página", tipo: "check" },
-        { k: "titulo", l: "Título" },
-        { k: "texto", l: "Texto", tipo: "area" },
-        { k: "boton", l: "Texto del botón", ph: "Llenar solicitud" },
-        { k: "enlace", l: "Enlace del formulario", ph: "https://forms.gle/...", nota: "Pega el enlace de Google Forms (o el formulario que usen)." }
       ] },
     { key: "contacto", titulo: "✉️ Contacto", tipo: "objeto",
       ayuda: "Si dejas una red social vacía, no aparece en la página.",
@@ -433,6 +424,8 @@
       }
       delete datos.galeria;
     }
+    // La sección «Únete» ya no existe: sus datos viejos se quitan al guardar.
+    delete datos.unete;
     // Fechas de eventos escritas a mano → formato nuevo (día, varios días, mes o por anunciar).
     if (Array.isArray(datos.eventos)) datos.eventos.forEach(normalizarFechaEvento);
     // Logros sin año académico: se adivina por el texto (o el año actual).

@@ -119,8 +119,6 @@
 
     var html = "";
     var nav = [];
-    var unete = d.unete || {};
-    var unirseActivo = unete.activo !== false && unete.enlace;
     var c = d.contacto || {};
 
     // ---- Portada ----
@@ -147,8 +145,7 @@
           '<strong>' + t(prox.ev.nombre) + '</strong><span class="portada__proximo-cuando">' + t(F.texto(prox.ev)) + " · " + t(prox.cuando) + "</span></a>"
         : "") +
       '<div class="portada__botones">' +
-      (unirseActivo ? '<a class="boton boton--acento" href="' + t(enlaceSeguro(unete.enlace)) + '" target="_blank" rel="noopener">' + t(unete.boton || "Únete") + "</a>" : "") +
-      '<a class="boton ' + (unirseActivo ? "boton--claro" : "boton--acento") + '" href="#eventos">📅 Ver eventos</a>' +
+      '<a class="boton boton--acento" href="#eventos">📅 Ver eventos</a>' +
       (hayFotos ? '<a class="boton boton--claro" href="#albumes">📸 Ver fotos</a>' : "") +
       "</div></div>" +
       '<div class="portada__emblema"><img src="img/emblema-512.png" alt="Emblema de FBLA: Service, Education, Progress" width="512" height="512"></div>' +
@@ -240,15 +237,6 @@
         '<div class="instagram" id="instagram-posts"></div>' +
         (perfil ? '<p class="instagram__mas"><a class="boton boton--borde" href="' + t(perfil) + '" target="_blank" rel="noopener">Ver más en Instagram</a></p>' : ""));
       nav.push(["instagram", "Instagram"]);
-    }
-
-    // ---- Únete ----
-    if (unirseActivo) {
-      html += '<section id="unete" class="seccion unete"><div class="contenedor unete__caja">' +
-        "<h2>" + t(unete.titulo || "¡Únete!") + "</h2><p>" + t(unete.texto) + "</p>" +
-        '<a class="boton boton--acento" href="' + t(enlaceSeguro(unete.enlace)) + '" target="_blank" rel="noopener">' + t(unete.boton || "Únete") + "</a>" +
-        "</div></section>";
-      nav.push(["unete", "Únete"]);
     }
 
     // ---- Contacto ----

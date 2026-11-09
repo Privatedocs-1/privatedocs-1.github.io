@@ -345,9 +345,6 @@ button.boton:disabled { opacity: .7; cursor: progress; transform: none; }
 .instagram__mas { text-align: center; margin: 28px 0 0; }
 
 /* ---------- Únete ---------- */
-.unete { background: var(--navy); color: var(--white); text-align: center; }
-.unete__caja h2 { font-size: clamp(1.8rem, 4.5vw, 2.6rem); color: var(--gold); }
-.unete__caja p { max-width: 620px; margin: 0 auto 28px; font-size: 1.1rem; }
 
 /* ---------- Contacto ---------- */
 .contacto { display: flex; flex-wrap: wrap; gap: 12px; }
