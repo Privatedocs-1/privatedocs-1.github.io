@@ -86,6 +86,8 @@ contacto:
 instagram:
   publicaciones: []
   titulo: ""
+  behold: https://feeds.behold.so/F9QJVJsOjOHNYke4Xg6r
+  cantidad: ""
 albumes:
   - id: album-mw8qehnp
     titulo: Iniciación Local FBLA 2026
