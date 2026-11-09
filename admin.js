@@ -13,6 +13,7 @@
   var ARCHIVO = "contenido.yml";
   var CLAVE_LS = "fbla3281-panel";
   var CLAVE_LS_APROBAR = "fbla3281-clave-aprobacion";
+  var CLAVE_LS_PESTANA = "fbla3281-pestana";
   var MAX_LADO = 2000;   // tamaño máximo (px) de las fotos que se suben
   var CABECERA =
     "# ==============================================================\n" +
@@ -30,14 +31,16 @@
   // ---------- Partes de la página y sus campos ----------
   var SECCIONES = [
     { key: "anuncios", titulo: "📢 Anuncios", tipo: "lista", item: "anuncio", nuevoArriba: true,
+      extraResumen: function (a) { return a.fecha || ""; },
       ayuda: "Avisos para los miembros. El primero de la lista es el que sale primero en la página.",
       campos: [
         { k: "titulo", l: "Título" },
         { k: "fecha", l: "Fecha", ph: "15 de noviembre de 2026" },
         { k: "texto", l: "Mensaje", tipo: "area" }
       ] },
-    { key: "eventos", titulo: "📅 Eventos", tipo: "lista", item: "evento",
-      ayuda: "Próximas actividades. Ponlas en orden de fecha (la más cercana primero).",
+    { key: "eventos", titulo: "📅 Eventos", tipo: "lista", item: "evento", ordenarFecha: true,
+      extraResumen: function (ev) { return FX.texto(ev); },
+      ayuda: "Próximas actividades. Toca un evento para abrirlo. Usa «📅 Ordenar por fecha» para ponerlos del más cercano al más lejano.",
       campos: [
         { k: "nombre", l: "Nombre del evento" },
         { k: "fecha", l: "Fecha", tipo: "fechaEvento" },
@@ -79,6 +82,7 @@
         { k: "foto", l: "Foto (mejor si es cuadrada)", tipo: "foto" }
       ] },
     { key: "logros", titulo: "🏆 Logros", tipo: "lista", item: "logro", nuevoArriba: true,
+      extraResumen: function (l) { return [l.competencia, l.anio_academico].filter(Boolean).join(" · "); },
       ayuda: "Premios y reconocimientos del capítulo.",
       campos: [
         { k: "titulo", l: "Logro", ph: "1er lugar — Social Media Strategies" },
@@ -409,19 +413,84 @@
     $("botones").hidden = false;
     $("guardar").textContent = modo === "github" ? "💾 Guardar cambios" : "⬇ Descargar archivo";
     $("estado").textContent = modo === "github" ? "Todo guardado" : "Modo prueba";
+    var ultima = ls(CLAVE_LS_PESTANA);
+    if (ultima && SECCIONES.some(function (s) { return s.key === ultima; })) actual = ultima;
     pintarPestanas();
     pintar();
+    // Revisa en segundo plano si hay sugerencias o fotos esperando (para los contadores).
+    if (modo === "github" && urlScript()) {
+      script("sugerencias").then(function (r) { if (!sugerencias) { sugerencias = r.sugerencias || []; sugerenciasInfo = r; } actualizarContadores(); }).catch(function () {});
+      script("pendientes").then(function (r) {
+        if (!pendientes) pendientes = (r.fotos || []).map(function (p) { p.estado = "pendiente"; return p; });
+        actualizarContadores();
+      }).catch(function () {});
+    }
   }
 
+  // Ctrl + S (o Cmd + S) guarda.
+  document.addEventListener("keydown", function (e) {
+    if ((e.ctrlKey || e.metaKey) && (e.key === "s" || e.key === "S")) {
+      e.preventDefault();
+      if (!$("guardar").disabled && !$("editor").hidden) guardar();
+    }
+  });
+
   // ---------- Pintar ----------
+  function irA(key) {
+    actual = key;
+    albumAbierto = null;
+    ls(CLAVE_LS_PESTANA, key);   // el panel recuerda la última pestaña
+    pintarPestanas(); pintar(); window.scrollTo(0, 0);
+  }
+
+  // Número que sale junto a cada pestaña (cuántos hay o cuántos esperan revisión).
+  function contadorDe(s) {
+    if (s.tipo === "lista" || s.tipo === "albumes") return (datos[s.key] || []).length || "";
+    if (s.tipo === "sugerencias" && sugerencias) {
+      var n = sugerencias.filter(function (x) { return !x.estado; }).length;
+      return n ? { n: n, alerta: true } : "";
+    }
+    if (s.tipo === "miembros" && pendientes) {
+      var m = pendientes.filter(function (x) { return x.estado === "pendiente"; }).length;
+      return m ? { n: m, alerta: true } : "";
+    }
+    return "";
+  }
+
   function pintarPestanas() {
     var nav = $("pestanas");
     nav.innerHTML = "";
+    // Celular: menú desplegable
+    var sel = el("select", { class: "pestanas-movil", "aria-label": "Parte de la página" });
     SECCIONES.forEach(function (s) {
+      var c = contadorDe(s), n = typeof c === "object" ? c.n : c;
+      var o = el("option", { value: s.key, texto: s.titulo + (n ? " (" + n + ")" : "") });
+      if (s.key === actual) o.selected = true;
+      sel.appendChild(o);
+    });
+    sel.addEventListener("change", function () { irA(sel.value); });
+    nav.appendChild(sel);
+    // Computadora: lista de pestañas
+    SECCIONES.forEach(function (s) {
+      var c = contadorDe(s), n = typeof c === "object" ? c.n : c;
       nav.appendChild(el("button", {
-        class: "pestana", role: "tab", "aria-selected": s.key === actual ? "true" : "false", texto: s.titulo,
-        onclick: function () { actual = s.key; albumAbierto = null; pintarPestanas(); pintar(); window.scrollTo(0, 0); }
-      }));
+        class: "pestana", role: "tab", "aria-selected": s.key === actual ? "true" : "false", "data-key": s.key,
+        onclick: function () { irA(s.key); }
+      }, [s.titulo, n ? el("span", { class: "pestana__n" + (c.alerta ? " pestana__n--alerta" : ""), texto: String(n) }) : null]));
+    });
+  }
+
+  // Actualiza solo los números de las pestañas (sin redibujar el panel).
+  function actualizarContadores() {
+    SECCIONES.forEach(function (s) {
+      var b = document.querySelector('.pestana[data-key="' + s.key + '"]');
+      if (!b) return;
+      var c = contadorDe(s), n = typeof c === "object" ? c.n : c;
+      var span = b.querySelector(".pestana__n");
+      if (!n) { if (span) span.remove(); return; }
+      if (!span) { span = el("span", { class: "pestana__n" }); b.appendChild(span); }
+      span.textContent = String(n);
+      span.classList.toggle("pestana__n--alerta", !!c.alerta);
     });
   }
 
@@ -468,6 +537,34 @@
       return nuevo;
     }
 
+    function anadir() {
+      var nuevo = {};
+      def.campos.forEach(function (c) { nuevo[c.k] = c.tipo === "check" ? c.def !== false : ""; });
+      arr.unshift(nuevo);            // el nuevo siempre aparece arriba, abierto
+      abiertos.add(nuevo);
+      marcarCambio();
+      var objetivo = redibujar().querySelector(":scope > .lista > .item");
+      if (objetivo) {
+        objetivo.scrollIntoView({ block: "center" });
+        var primer = objetivo.querySelector("input[type=text], textarea");
+        if (primer) primer.focus();
+      }
+    }
+
+    // Barra de arriba: añadir (y ordenar por fecha en Eventos)
+    var barra = el("div", { class: "lista__barra" }, [
+      el("button", { class: "btn btn--azul", type: "button", onclick: anadir }, ["＋ Añadir " + def.item]),
+      def.ordenarFecha && arr.length > 1 ? el("button", { class: "btn btn--borde btn--chico", type: "button",
+        onclick: function () { ordenarPorFecha(arr); marcarCambio(); redibujar(); avisar("Eventos ordenados por fecha."); } }, ["📅 Ordenar por fecha"]) : null,
+      arr.length > 1 ? el("button", { class: "btn btn--borde btn--chico", type: "button",
+        onclick: function () {
+          var todos = arr.every(function (o) { return abiertos.has(o); });
+          arr.forEach(function (o) { if (todos) abiertos.delete(o); else abiertos.add(o); });
+          redibujar();
+        } }, [arr.every(function (o) { return abiertos.has(o); }) ? "▴ Cerrar todos" : "▾ Abrir todos"]) : null
+    ]);
+    cont.appendChild(barra);
+
     var caja = el("div", { class: "lista" });
     if (!arr.length) {
       caja = el("div", { class: "vacio", texto: "No hay ningún " + def.item + " todavía." });
@@ -475,8 +572,15 @@
     arr.forEach(function (obj, i) {
       if (!obj || typeof obj !== "object") obj = arr[i] = {};
       var resumen = resumenDe(def, obj);
+      var abierto = abiertos.has(obj);
+      var extra = def.extraResumen ? def.extraResumen(obj) : "";
       var cab = el("div", { class: "item__cabeza" }, [
-        el("span", { class: "item__nombre", texto: mayus(def.item) + " " + (i + 1) + (resumen ? " — " + resumen : "") }),
+        el("button", { type: "button", class: "item__nombre", "aria-expanded": abierto ? "true" : "false",
+          onclick: function () { if (abiertos.has(obj)) abiertos.delete(obj); else abiertos.add(obj); redibujar(); } }, [
+          el("span", { class: "item__flecha", texto: abierto ? "▾" : "▸" }),
+          el("span", { class: "item__titulo", texto: (resumen || mayus(def.item) + " sin título") }),
+          extra ? el("span", { class: "item__extra", texto: extra }) : null
+        ]),
         el("button", { class: "btn btn--icono", type: "button", title: "Subir", "aria-label": "Mover arriba", disabled: i === 0,
           onclick: function () { arr.splice(i - 1, 0, arr.splice(i, 1)[0]); marcarCambio(); redibujar(); } }, ["↑"]),
         el("button", { class: "btn btn--icono", type: "button", title: "Bajar", "aria-label": "Mover abajo", disabled: i === arr.length - 1,
@@ -487,33 +591,38 @@
             arr.splice(i, 1); marcarCambio(); redibujar();
           } }, ["🗑 Eliminar"])
       ]);
-      var cuerpo = el("div", { class: "item__cuerpo" });
-      def.campos.forEach(function (c) { cuerpo.appendChild(campo(obj, c)); });
-      cuerpo.addEventListener("input", function () {
-        var r = resumenDe(def, obj);
-        cab.firstChild.textContent = mayus(def.item) + " " + (i + 1) + (r ? " — " + r : "");
-      });
-      caja.appendChild(el("div", { class: "item" }, [cab, cuerpo]));
+      var item = el("div", { class: "item" + (abierto ? "" : " item--cerrado") }, [cab]);
+      if (abierto) {
+        // Los campos solo se crean al abrir el elemento (el panel carga más rápido).
+        var cuerpo = el("div", { class: "item__cuerpo" });
+        def.campos.forEach(function (c) { cuerpo.appendChild(campo(obj, c)); });
+        cuerpo.addEventListener("input", function () {
+          var r = resumenDe(def, obj);
+          cab.querySelector(".item__titulo").textContent = r || mayus(def.item) + " sin título";
+        });
+        item.appendChild(cuerpo);
+      }
+      caja.appendChild(item);
     });
     cont.appendChild(caja);
-
-    cont.appendChild(el("button", {
-      class: "btn btn--grande", type: "button",
-      onclick: function () {
-        var nuevo = {};
-        def.campos.forEach(function (c) { nuevo[c.k] = c.tipo === "check" ? c.def !== false : ""; });
-        if (def.nuevoArriba) arr.unshift(nuevo); else arr.push(nuevo);
-        marcarCambio();
-        var items = redibujar().querySelectorAll(":scope > .lista > .item");
-        var objetivo = def.nuevoArriba ? items[0] : items[items.length - 1];
-        if (objetivo) {
-          objetivo.scrollIntoView({ block: "center" });
-          var primer = objetivo.querySelector("input[type=text], textarea");
-          if (primer) primer.focus();
-        }
-      }
-    }, ["＋ Añadir " + def.item]));
+    actualizarContadores();
     return cont;
+  }
+
+  // Elementos de listas que están abiertos (los demás se muestran como una línea).
+  var abiertos = new WeakSet();
+
+  // Eventos por fecha: primero los que tienen fecha (del más cercano al más lejano), al final «Por anunciar».
+  function ordenarPorFecha(arr) {
+    function clave(ev) {
+      var f = FX.leer(ev);
+      if (f.tipo === "dia" || f.tipo === "rango") return f.inicio.getTime();
+      if (f.tipo === "mes") return new Date(f.mes.y, f.mes.m, 1).getTime();
+      return Infinity;
+    }
+    var conIndice = arr.map(function (ev, i) { return { ev: ev, i: i, k: clave(ev) }; });
+    conIndice.sort(function (a, b) { return a.k - b.k || a.i - b.i; });
+    conIndice.forEach(function (x, i) { arr[i] = x.ev; });
   }
 
   var contador = 0;
@@ -801,11 +910,12 @@
           el("button", { type: "button", class: "calendario__nav", "aria-label": "Año siguiente", onclick: function () { y++; pintar(); } }, ["›"])
         ]));
         var rejilla = el("div", { class: "calendario__meses" });
+        var hoy = new Date(), mesActual = hoy.getFullYear() + "-" + (hoy.getMonth() < 9 ? "0" : "") + (hoy.getMonth() + 1);
         FX.MESES.forEach(function (nombre, i) {
           var v = y + "-" + (i < 9 ? "0" : "") + (i + 1);
           rejilla.appendChild(el("button", {
-            type: "button", texto: mayus(nombre),
-            class: "calendario__mes" + (v === valor ? " calendario__dia--sel" : ""),
+            type: "button", texto: mayus(nombre), title: v < mesActual ? "Este mes ya pasó" : null,
+            class: "calendario__mes" + (v === valor ? " calendario__dia--sel" : "") + (v < mesActual ? " calendario__mes--pasado" : ""),
             onclick: function () { valor = v; alCambiar(v); listo(); }
           }));
         });
@@ -1051,6 +1161,7 @@
 
   function dibujarSugerencias(zona) {
     zona.innerHTML = "";
+    actualizarContadores();
     var ult = $("sug-ultima");
     if (ult && sugerenciasInfo.ultima) ult.textContent = "Última revisión: " + new Date(sugerenciasInfo.ultima).toLocaleString("es-PR", { dateStyle: "medium", timeStyle: "short" });
     if (sugerenciasInfo.aviso) zona.appendChild(el("div", { class: "aviso", texto: sugerenciasInfo.aviso }));
@@ -1279,6 +1390,7 @@
 
   function pintarPendientes(zona) {
     zona.innerHTML = "";
+    actualizarContadores();
     var lista = (pendientes || []).filter(function (p) { return p.estado !== "rechazada"; });
     if (!lista.length) {
       zona.appendChild(el("div", { class: "vacio", texto: "No hay fotos nuevas. 🎉" }));
