@@ -63,7 +63,8 @@
       ayuda: "Los miembros pueden enviar fotos para un álbum. Llegan a una carpeta privada de Google Drive y solo se publican cuando las apruebas aquí.",
       campos: [
         { k: "activo", l: "Permitir que los miembros envíen fotos", tipo: "check", def: false },
-        { k: "url", l: "Enlace del script de Google (termina en /exec)", ph: "https://script.google.com/macros/s/.../exec",
+        { k: "url", l: "Enlace del script de Google (termina en /exec)", ph: "https://script.google.com/macros/s/.../exec", bloqueado: true,
+          peligro: "Si este enlace queda mal, dejan de funcionar el envío de fotos de miembros, el conteo de visitas y las sugerencias de Instagram.",
           nota: "Lo obtienes una sola vez al instalar el script. Las instrucciones están en GUIA.md." }
       ] },
     { key: "_sugerencias", titulo: "💡 Sugerencias de Instagram", tipo: "sugerencias",
@@ -91,7 +92,8 @@
       ayuda: "La página muestra solas las publicaciones más recientes de Instagram usando el feed de Behold.so. No tienes que hacer nada cuando publiquen algo nuevo: aparece solo (Behold se actualiza una vez al día).",
       campos: [
         { k: "titulo", l: "Título de la sección", ph: "Síguenos en Instagram" },
-        { k: "behold", l: "Enlace del feed de Behold", tipo: "behold", ph: "https://feeds.behold.so/...",
+        { k: "behold", l: "Enlace del feed de Behold", tipo: "behold", ph: "https://feeds.behold.so/...", bloqueado: true,
+          peligro: "Si este enlace queda mal, dejan de salir las publicaciones de Instagram en la página y las sugerencias diarias.",
           nota: "En behold.so → tu feed → «Embed» / «JSON» → copia el enlace que empieza con https://feeds.behold.so/" },
         { k: "cantidad", l: "Cuántas publicaciones mostrar", ph: "2" },
         { k: "publicaciones", l: "Publicaciones de respaldo (opcional)", tipo: "lista", item: "publicación", nuevoArriba: true,
@@ -133,7 +135,8 @@
       ayuda: "Si dejas una red social vacía, no aparece en la página.",
       campos: [
         { k: "correo", l: "Correo electrónico" },
-        { k: "fbla_connect", l: "Enlace de FBLA Connect", ph: "https://connect.fbla.org/", defTexto: "https://connect.fbla.org/",
+        { k: "fbla_connect", l: "Enlace de FBLA Connect", ph: "https://connect.fbla.org/", defTexto: "https://connect.fbla.org/", bloqueado: true,
+          peligro: "Si este enlace queda mal, el botón «FBLA Connect» del menú llevará a una página equivocada.",
           nota: "Portal oficial de miembros de FBLA. Sale en el menú de arriba. Déjalo vacío para quitarlo." },
         { k: "instagram", l: "Enlace de Instagram", ph: "https://www.instagram.com/..." },
         { k: "facebook", l: "Enlace de Facebook", ph: "https://www.facebook.com/..." },
@@ -591,6 +594,36 @@
       entrada.addEventListener("input", revisar);
     }
     entrada.addEventListener("input", function () { obj[c.k] = entrada.value; marcarCambio(); });
+
+    // Enlaces delicados: bloqueados hasta que se pulse ✏️ Editar.
+    if (c.bloqueado) {
+      var boton = el("button", { type: "button", class: "btn btn--icono candado" });
+      var aviso = el("p", { class: "campo__nota campo__peligro", texto: "⚠ " + (c.peligro || "Cambiar este enlace puede dañar la página.") });
+      var fijar = function (bloquear) {
+        entrada.readOnly = bloquear;
+        entrada.classList.toggle("entrada--bloqueada", bloquear);
+        boton.textContent = bloquear ? "✏️ Editar" : "🔒 Bloquear";
+        boton.setAttribute("aria-label", bloquear ? "Desbloquear para editar " + c.l : "Bloquear " + c.l);
+        aviso.hidden = bloquear;
+      };
+      boton.addEventListener("click", function () {
+        if (entrada.readOnly) {
+          if (!confirm("¿Seguro que quieres cambiar «" + c.l + "»?\n\n" + (c.peligro || "") + "\n\nSolo cámbialo si sabes que el enlace nuevo es correcto.")) return;
+          fijar(false);
+          entrada.focus();
+        } else {
+          fijar(true);
+        }
+      });
+      fijar(true);
+      return el("div", { class: "campo" }, [
+        el("label", { for: id, texto: "🔒 " + c.l }),
+        el("div", { class: "fila-candado" }, [entrada, boton]),
+        aviso, estado,
+        c.nota ? el("p", { class: "campo__nota", texto: c.nota }) : null
+      ]);
+    }
+
     return el("div", { class: "campo" }, [
       el("label", { for: id, texto: c.l }), entrada, estado,
       c.nota ? el("p", { class: "campo__nota", texto: c.nota }) : null
