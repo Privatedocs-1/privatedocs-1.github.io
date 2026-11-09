@@ -78,10 +78,14 @@
         { k: "detalle", l: "Detalle", ph: "Conferencia Estatal 2026" }
       ] },
     { key: "instagram", titulo: "📷 Instagram", tipo: "objeto",
-      ayuda: "Publicaciones de Instagram que se muestran en la página. En Instagram, abre la publicación, toca «⋯» o «Compartir» → «Copiar enlace» y pégalo aquí.",
+      ayuda: "La página muestra solas las publicaciones más recientes de Instagram usando el feed de Behold.so. No tienes que hacer nada cuando publiquen algo nuevo: aparece solo (Behold se actualiza una vez al día).",
       campos: [
         { k: "titulo", l: "Título de la sección", ph: "Síguenos en Instagram" },
-        { k: "publicaciones", l: "Publicaciones", tipo: "lista", item: "publicación", nuevoArriba: true,
+        { k: "behold", l: "Enlace del feed de Behold", tipo: "behold", ph: "https://feeds.behold.so/...",
+          nota: "En behold.so → tu feed → «Embed» / «JSON» → copia el enlace que empieza con https://feeds.behold.so/" },
+        { k: "cantidad", l: "Cuántas publicaciones mostrar", ph: "2" },
+        { k: "publicaciones", l: "Publicaciones de respaldo (opcional)", tipo: "lista", item: "publicación", nuevoArriba: true,
+          nota: "Solo se usan si Behold no responde. En Instagram: «⋯» o «Compartir» → «Copiar enlace».",
           campos: [{ k: "enlace", l: "Enlace de la publicación", tipo: "instagram", ph: "https://www.instagram.com/p/..." }] }
       ] },
     { key: "capitulo", titulo: "🏫 Información general", tipo: "objeto",
@@ -484,7 +488,11 @@
 
     if (tipo === "oculto" || c.oculto) return document.createDocumentFragment();
     if (tipo === "lista") {
-      return el("div", { class: "campo" }, [el("span", { class: "campo__titulo", texto: c.l }), lista(obj, c.k, c)]);
+      return el("div", { class: "campo" }, [
+        el("span", { class: "campo__titulo", texto: c.l }),
+        c.nota ? el("p", { class: "campo__nota", style: "margin:0 0 8px", texto: c.nota }) : null,
+        lista(obj, c.k, c)
+      ]);
     }
     if (tipo === "check") {
       if (obj[c.k] === undefined) obj[c.k] = c.def !== false;
@@ -502,12 +510,18 @@
       : el("input", { type: "text", id: id, placeholder: c.ph });
     entrada.value = valor;
     var estado = null;
-    if (tipo === "instagram") {
+    if (tipo === "instagram" || tipo === "behold") {
       estado = el("p", { class: "campo__nota" });
+      var valido = tipo === "behold"
+        ? function (v) { return /^https:\/\/feeds\.behold\.so\/[\w-]+\/?$/.test(v); }
+        : function (v) { return !!enlaceInstagram(v); };
+      var error = tipo === "behold"
+        ? "⚠ El enlace debe empezar con https://feeds.behold.so/"
+        : "⚠ Este enlace no es de una publicación de Instagram (debe tener /p/ o /reel/).";
       var revisar = function () {
         var v = entrada.value.trim();
-        estado.textContent = !v ? "" : enlaceInstagram(v) ? "✓ Enlace válido" : "⚠ Este enlace no es de una publicación de Instagram (debe tener /p/ o /reel/).";
-        estado.style.color = enlaceInstagram(v) ? "#1d7a3a" : "#c0392b";
+        estado.textContent = !v ? "" : valido(v) ? "✓ Enlace válido" : error;
+        estado.style.color = valido(v) ? "#1d7a3a" : "#c0392b";
       };
       revisar();
       entrada.addEventListener("input", revisar);

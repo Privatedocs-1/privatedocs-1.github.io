@@ -190,14 +190,12 @@
 
     // ---- Instagram ----
     var ig = d.instagram || {};
-    var posts = lista(ig.publicaciones).map(function (p) { return enlaceInstagram(p.enlace); }).filter(Boolean);
-    if (posts.length) {
+    var fijas = lista(ig.publicaciones).map(function (p) { return enlaceInstagram(p.enlace); }).filter(Boolean);
+    var feed = feedBehold(ig.behold);
+    if (feed || fijas.length) {
       var perfil = enlaceSeguro(c.instagram);
       html += seccion("instagram", ig.titulo || "Síguenos en Instagram",
-        '<div class="instagram">' + posts.map(function (url) {
-          return '<div class="instagram__post"><blockquote class="instagram-media" data-instgrm-permalink="' + t(url) +
-            '?utm_source=ig_embed" data-instgrm-version="14"><a href="' + t(url) + '" target="_blank" rel="noopener">Ver esta publicación en Instagram</a></blockquote></div>';
-        }).join("") + "</div>" +
+        '<div class="instagram" id="instagram-posts"></div>' +
         (perfil ? '<p class="instagram__mas"><a class="boton boton--borde" href="' + t(perfil) + '" target="_blank" rel="noopener">Ver más en Instagram</a></p>' : ""));
       nav.push(["instagram", "Instagram"]);
     }
@@ -233,11 +231,65 @@
       '<p class="pie__nota">Capítulo local de Future Business Leaders of America.</p>' +
       '<p class="pie__nota"><a href="admin.html" class="pie__editar">Panel de edición</a></p>';
 
-    if (posts.length) cargarInstagram();
+    if (feed || fijas.length) mostrarInstagram(feed, fijas, cantidadInstagram(ig.cantidad));
     revisarRuta();
   }
 
   // ---------- Instagram ----------
+  var CACHE_IG = "fbla3281-instagram";
+  var HORAS_CACHE_IG = 3;
+
+  function feedBehold(url) {
+    var u = String(url || "").trim();
+    return /^https:\/\/feeds\.behold\.so\/[\w-]+\/?$/.test(u) ? u : "";
+  }
+
+  function cantidadInstagram(n) {
+    n = parseInt(n, 10);
+    return n >= 1 && n <= 12 ? n : 2;
+  }
+
+  // Lee las publicaciones más recientes del feed de Behold.
+  // Guarda una copia por 3 horas en el navegador para no gastar el límite gratis.
+  function ultimasPublicaciones(feed) {
+    var guardado = null;
+    try { guardado = JSON.parse(localStorage.getItem(CACHE_IG) || "null"); } catch (e) {}
+    if (guardado && guardado.feed === feed && Date.now() - guardado.hora < HORAS_CACHE_IG * 3600000 && guardado.enlaces.length) {
+      return Promise.resolve(guardado.enlaces);
+    }
+    return fetch(feed).then(function (r) {
+      if (!r.ok) throw new Error("Behold " + r.status);
+      return r.json();
+    }).then(function (j) {
+      var posts = Array.isArray(j) ? j : (j && (j.posts || j.media)) || [];
+      var enlaces = posts.map(function (p) { return enlaceInstagram(p && p.permalink); }).filter(Boolean);
+      if (!enlaces.length) throw new Error("Feed vacío");
+      try { localStorage.setItem(CACHE_IG, JSON.stringify({ feed: feed, hora: Date.now(), enlaces: enlaces })); } catch (e) {}
+      return enlaces;
+    }).catch(function (e) {
+      if (guardado && guardado.feed === feed && guardado.enlaces.length) return guardado.enlaces;  // copia vieja
+      throw e;
+    });
+  }
+
+  function mostrarInstagram(feed, fijas, cantidad) {
+    var cont = document.getElementById("instagram-posts");
+    var pintar = function (enlaces) {
+      if (!enlaces.length) {
+        var sec = document.getElementById("instagram");
+        if (sec) sec.querySelector(".instagram").innerHTML = "";
+        return;
+      }
+      cont.innerHTML = enlaces.slice(0, cantidad).map(function (url) {
+        return '<div class="instagram__post"><blockquote class="instagram-media" data-instgrm-permalink="' + t(url) +
+          '?utm_source=ig_embed" data-instgrm-version="14"><a href="' + t(url) + '" target="_blank" rel="noopener">Ver esta publicación en Instagram</a></blockquote></div>';
+      }).join("");
+      cargarInstagram();
+    };
+    if (!feed) return pintar(fijas);
+    ultimasPublicaciones(feed).then(pintar, function () { pintar(fijas); });
+  }
+
   function cargarInstagram() {
     if (window.instgrm) { window.instgrm.Embeds.process(); return; }
     var s = document.createElement("script");
