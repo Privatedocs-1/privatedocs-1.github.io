@@ -172,6 +172,12 @@ a { color: var(--blue); }
 .evento--proximo { border: 2px solid var(--gold); box-shadow: 0 8px 24px rgba(10, 46, 127, .12); }
 .evento__etiqueta { margin: 0 0 4px !important; font-size: .78rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--blue); }
 .evento__cuenta { margin-top: 10px !important; }
+.evento__docs { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.evento__docs li { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.evento__docs a { font-weight: 700; color: var(--blue); text-decoration: none; background: var(--gris); border: 1px solid var(--borde); border-radius: 8px; padding: 6px 12px; }
+.evento__docs a:hover, .evento__docs a:focus-visible { background: var(--gold); color: var(--navy); border-color: var(--gold); }
+.evento__docs-meta { font-size: .8rem; color: var(--texto-suave); }
+.anuncio .evento__compartir { margin-top: 14px; }
 .evento__compartir {
   margin-top: 12px; border: 1.5px solid var(--navy); background: var(--white); color: var(--navy);
   font: inherit; font-weight: 700; font-size: .9rem; padding: 7px 14px; border-radius: 999px; cursor: pointer;

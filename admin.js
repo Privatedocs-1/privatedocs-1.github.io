@@ -47,7 +47,14 @@
         { k: "hora", l: "Hora (opcional)", ph: "9:00 AM",
           nota: "Si la escribes (por ejemplo 9:00 AM), la cuenta regresiva llega hasta esa hora." },
         { k: "lugar", l: "Lugar (opcional)" },
-        { k: "descripcion", l: "Descripción (opcional)", tipo: "area" }
+        { k: "descripcion", l: "Descripción (opcional)", tipo: "area" },
+        { k: "documentos", l: "Documentos del evento (opcional)", tipo: "lista", item: "documento",
+          nota: "Permiso de viaje, agenda, guía… Salen debajo del evento para descargar.",
+          campos: [
+            { k: "titulo", l: "Título", ph: "Permiso de viaje" },
+            { k: "archivo", l: "Archivo", tipo: "archivo" },
+            { k: "enlace", l: "…o enlace (opcional)", ph: "https://drive.google.com/..." }
+          ] }
       ] },
     { key: "albumes", titulo: "📸 Álbumes de fotos", tipo: "albumes", item: "álbum",
       ayuda: "Crea un álbum por cada evento, sube las fotos y márcalo como «Publicado» cuando esté listo. Los visitantes pueden ver y descargar las fotos.",
@@ -364,6 +371,7 @@
     ocupado("Cargando contenido…");
     gh("").then(function (repo) {
       rama = repo.default_branch || "main";
+      repoKB = repo.size || 0;
       return gh(rutaContenido(ARCHIVO, rama));
     }).then(function (r) {
       sha = r.sha;
@@ -488,6 +496,21 @@
         onclick: function () { irA(s.key); }
       }, [s.titulo, n ? el("span", { class: "pestana__n" + (c.alerta ? " pestana__n--alerta" : ""), texto: String(n) }) : null]));
     });
+    var esp = indicadorEspacio();
+    if (esp) nav.appendChild(esp);
+  }
+
+  // Espacio usado en GitHub (GitHub Pages recomienda que el sitio no pase de 1 GB).
+  var repoKB = 0;
+  function indicadorEspacio() {
+    if (!repoKB) return null;
+    var mb = repoKB / 1024, limite = 1024, pct = Math.min(100, mb / limite * 100);
+    var nivel = pct >= 85 ? "alto" : pct >= 60 ? "medio" : "bajo";
+    return el("div", { class: "almacen almacen--" + nivel, title: "Incluye el historial de cambios. Límite recomendado de GitHub Pages: 1 GB." }, [
+      el("span", { class: "almacen__txt", texto: "💾 Espacio: " + (mb < 10 ? mb.toFixed(1) : Math.round(mb)) + " MB de 1 GB" }),
+      el("span", { class: "almacen__barra" }, [el("span", { style: "width:" + Math.max(2, pct).toFixed(1) + "%" })]),
+      pct >= 85 ? el("span", { class: "almacen__aviso", texto: "Casi lleno: pídele a Claude que libere espacio." }) : null
+    ]);
   }
 
   // Actualiza solo los números de las pestañas (sin redibujar el panel).
@@ -670,11 +693,12 @@
         el("p", { class: "campo__nota", texto: "De agosto a julio. En la página, los logros se agrupan por año académico." })]);
     }
     if (tipo === "competencia") {
-      var lista = document.getElementById("lista-competencias");
-      if (!lista) {
-        lista = el("datalist", { id: "lista-competencias" });
-        (window.COMPETENCIAS_FBLA || []).forEach(function (n) { lista.appendChild(el("option", { value: n })); });
-        document.body.appendChild(lista);
+      // (No llamar "lista" a esta variable: taparía la función lista() que dibuja las listas.)
+      var datalist = document.getElementById("lista-competencias");
+      if (!datalist) {
+        datalist = el("datalist", { id: "lista-competencias" });
+        (window.COMPETENCIAS_FBLA || []).forEach(function (n) { datalist.appendChild(el("option", { value: n })); });
+        document.body.appendChild(datalist);
       }
       var comp = el("input", { type: "text", id: id, list: "lista-competencias", placeholder: c.ph, autocomplete: "off" });
       comp.value = obj[c.k] || "";

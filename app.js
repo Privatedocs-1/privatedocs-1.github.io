@@ -173,7 +173,9 @@
         '<div class="rejilla rejilla--2">' + anuncios.map(function (a) {
           return '<article class="tarjeta anuncio">' +
             (a.fecha ? '<p class="etiqueta">' + t(a.fecha) + "</p>" : "") +
-            "<h3>" + t(a.titulo) + "</h3>" + (a.texto ? "<p>" + t(a.texto) + "</p>" : "") + "</article>";
+            "<h3>" + t(a.titulo) + "</h3>" + (a.texto ? "<p>" + t(a.texto) + "</p>" : "") +
+            '<button type="button" class="evento__compartir" data-compartir-anuncio="' + anuncios.indexOf(a) + '">📤 Compartir imagen</button>' +
+            "</article>";
         }).join("") + "</div>", "seccion--gris");
       nav.push(["anuncios", "Anuncios"]);
     }
@@ -320,6 +322,7 @@
         "<h3>" + t(e.nombre) + "</h3>" +
         (meta ? '<p class="evento__meta">' + meta + "</p>" : "") +
         (e.descripcion ? "<p>" + t(e.descripcion) + "</p>" : "") +
+        htmlDocsEvento(e) +
         (insignia && !enVivo ? '<p class="evento__cuenta">' + insignia + "</p>" : "") +
         enVivo +
         (st.tipo !== "pasado" ? '<button type="button" class="evento__compartir" data-compartir="' + i + '">📤 Compartir imagen</button>' : "") +
@@ -327,13 +330,70 @@
     }).join("") + "</ol>";
   }
 
-  // ---------- Compartir un evento como imagen (WhatsApp, Instagram…) ----------
+  // ---------- Compartir eventos y anuncios como imagen (WhatsApp, Instagram…) ----------
   document.addEventListener("click", function (e) {
-    var b = e.target.closest && e.target.closest("[data-compartir]");
+    var b = e.target.closest && e.target.closest("[data-compartir], [data-compartir-anuncio]");
     if (!b) return;
+    if (b.hasAttribute("data-compartir-anuncio")) {
+      var an = lista(DATOS.anuncios)[Number(b.getAttribute("data-compartir-anuncio"))];
+      if (an) compartirImagen(function (emb) { return dibujarTarjetaAnuncio(an, emb); }, an.titulo || "anuncio",
+        an.titulo + (an.fecha ? " — " + an.fecha : "") + "\n" + location.origin + location.pathname + "#anuncios", b);
+      return;
+    }
     var ev = lista(DATOS.eventos)[Number(b.getAttribute("data-compartir"))];
-    if (ev) compartirEvento(ev, b);
+    if (ev) compartirImagen(function (emb) { return dibujarTarjetaEvento(ev, emb); }, ev.nombre || "evento",
+      ev.nombre + " — " + F.texto(ev) + (ev.lugar ? " · " + ev.lugar : "") + "\n" + location.origin + location.pathname + "#eventos", b);
   });
+
+  var FUENTE = 'Arial, "Helvetica Neue", Helvetica, sans-serif';
+
+  // Fondo y pie comunes de las imágenes para compartir (colores oficiales).
+  function lienzoBase(W, H) {
+    var c = document.createElement("canvas");
+    c.width = W; c.height = H;
+    var x = c.getContext("2d");
+    var g = x.createLinearGradient(0, 0, W, H);
+    g.addColorStop(0, "#0a2e7f"); g.addColorStop(1, "#1d52bc");
+    x.fillStyle = g; x.fillRect(0, 0, W, H);
+    x.fillStyle = "rgba(34,106,221,.35)"; x.beginPath(); x.arc(W - 60, 120, 340, 0, Math.PI * 2); x.fill();
+    x.fillStyle = "rgba(255,255,255,.05)"; x.beginPath(); x.arc(80, H - 160, 260, 0, Math.PI * 2); x.fill();
+    x.fillStyle = "#f4ab19"; x.fillRect(0, H - 22, W, 22);
+    x.textAlign = "center";
+    return { c: c, x: x };
+  }
+  function pieTarjeta(x, W, H) {
+    var cap = DATOS.capitulo || {};
+    x.textAlign = "center";
+    x.fillStyle = "#ffffff"; x.font = "700 40px " + FUENTE;
+    x.fillText(String(cap.nombre || "FBLA").split(/\s+[-–—]\s+/)[0], W / 2, H - 150);
+    x.font = "32px " + FUENTE; x.fillStyle = "rgba(255,255,255,.85)";
+    x.fillText(cap.escuela || "", W / 2, H - 104);
+    x.fillStyle = "#f4ab19"; x.font = "700 32px " + FUENTE;
+    x.fillText(location.host || "fbladcg.github.io", W / 2, H - 56);
+  }
+
+  function dibujarTarjetaAnuncio(a, emblema) {
+    var W = 1080, H = 1350, base = lienzoBase(W, H), x = base.x;
+    if (emblema) x.drawImage(emblema, W / 2 - 130, 120, 260, 260);
+    x.fillStyle = "#f4ab19"; x.font = "700 40px " + FUENTE;
+    x.fillText("📢 ANUNCIO", W / 2, 470);
+    x.fillStyle = "#ffffff"; x.font = "700 70px " + FUENTE;
+    var y = 570;
+    lineas(x, a.titulo, W - 160, 3).forEach(function (l) { x.fillText(l, W / 2, y); y += 82; });
+    if (a.fecha) {
+      y += 20;
+      x.font = "700 44px " + FUENTE; x.fillStyle = "#f4ab19";
+      x.fillText("📅 " + a.fecha, W / 2, y); y += 50;
+    }
+    if (a.texto) {
+      y += 40;
+      x.font = "40px " + FUENTE; x.fillStyle = "rgba(255,255,255,.95)";
+      var max = Math.max(2, Math.floor((H - 230 - y) / 56));
+      lineas(x, a.texto, W - 200, max).forEach(function (l) { x.fillText(l, W / 2, y); y += 56; });
+    }
+    pieTarjeta(x, W, H);
+    return base.c;
+  }
 
   function cargarImagen(src) {
     return new Promise(function (ok) {
@@ -357,21 +417,9 @@
   }
 
   function dibujarTarjetaEvento(ev, emblema) {
-    var W = 1080, H = 1350;
-    var c = document.createElement("canvas");
-    c.width = W; c.height = H;
-    var x = c.getContext("2d");
-    var fuente = 'Arial, "Helvetica Neue", Helvetica, sans-serif';
-    // Fondo con los colores oficiales
-    var g = x.createLinearGradient(0, 0, W, H);
-    g.addColorStop(0, "#0a2e7f"); g.addColorStop(1, "#1d52bc");
-    x.fillStyle = g; x.fillRect(0, 0, W, H);
-    x.fillStyle = "rgba(34,106,221,.35)"; x.beginPath(); x.arc(W - 60, 120, 340, 0, Math.PI * 2); x.fill();
-    x.fillStyle = "rgba(255,255,255,.05)"; x.beginPath(); x.arc(80, H - 160, 260, 0, Math.PI * 2); x.fill();
-    x.fillStyle = "#f4ab19"; x.fillRect(0, H - 22, W, 22);
-    // Emblema
+    var W = 1080, H = 1350, base = lienzoBase(W, H), x = base.x, c = base.c;
+    var fuente = FUENTE;
     if (emblema) x.drawImage(emblema, W / 2 - 170, 150, 340, 340);
-    x.textAlign = "center";
     // Etiqueta
     var st = F.estado(ev);
     var etiqueta = st.tipo === "hoy" ? "¡ES HOY!" : st.tipo === "encurso" ? "¡EN CURSO!" : "PRÓXIMO EVENTO";
@@ -400,30 +448,22 @@
       x.arcTo(rx, ry + rh, rx, ry, r); x.arcTo(rx, ry, rx + w, ry, r); x.fill();
       x.fillStyle = "#0a2e7f"; x.fillText(cuenta, W / 2, y);
     }
-    // Pie
-    var cap = DATOS.capitulo || {};
-    x.fillStyle = "#ffffff"; x.font = "700 40px " + fuente;
-    x.fillText(String(cap.nombre || "FBLA").split(/\s+[-–—]\s+/)[0], W / 2, H - 150);
-    x.font = "32px " + fuente; x.fillStyle = "rgba(255,255,255,.85)";
-    x.fillText(cap.escuela || "", W / 2, H - 104);
-    x.fillStyle = "#f4ab19"; x.font = "700 32px " + fuente;
-    x.fillText(location.host || "fbladcg.github.io", W / 2, H - 56);
+    pieTarjeta(x, W, H);
     return c;
   }
 
-  function compartirEvento(ev, boton) {
+  function compartirImagen(dibujar, titulo, mensaje, boton) {
     var texto = boton.textContent;
     boton.disabled = true;
     boton.textContent = "Preparando imagen…";
     cargarImagen("img/emblema-512.png").then(function (emblema) {
-      var lienzo = dibujarTarjetaEvento(ev, emblema);
+      var lienzo = dibujar(emblema);
       return new Promise(function (ok) { lienzo.toBlob(ok, "image/png"); });
     }).then(function (blob) {
-      var nombre = String(ev.nombre || "evento").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^\w]+/g, "-").replace(/^-|-$/g, "").toLowerCase() + ".png";
+      var nombre = String(titulo).normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^\w]+/g, "-").replace(/^-|-$/g, "").toLowerCase().slice(0, 60) + ".png";
       var archivo = new File([blob], nombre, { type: "image/png" });
-      var mensaje = ev.nombre + " — " + F.texto(ev) + (ev.lugar ? " · " + ev.lugar : "") + "\n" + location.origin + location.pathname + "#eventos";
       if (navigator.canShare && navigator.canShare({ files: [archivo] })) {
-        return navigator.share({ files: [archivo], title: ev.nombre, text: mensaje }).catch(function () {});
+        return navigator.share({ files: [archivo], title: titulo, text: mensaje }).catch(function () {});
       }
       // Computadora: se descarga la imagen.
       var a = document.createElement("a");
@@ -449,6 +489,22 @@
     b = Number(b) || 0;
     if (!b) return "";
     return b >= 1048576 ? (b / 1048576).toFixed(1).replace(".0", "") + " MB" : Math.max(1, Math.round(b / 1024)) + " KB";
+  }
+
+  // Documentos adjuntos a un evento: lista corta de enlaces para descargar.
+  function htmlDocsEvento(e) {
+    var docs = lista(e.documentos).filter(function (x) { return x.archivo || x.enlace; });
+    if (!docs.length) return "";
+    return '<ul class="evento__docs">' + docs.map(function (x) {
+      var archivo = x.archivo ? enlaceSeguro(x.archivo) : "";
+      var url = archivo || enlaceSeguro(x.enlace);
+      var ext = archivo ? archivo.split(".").pop().toLowerCase() : "";
+      var tipo = TIPOS_DOC[ext] || (archivo ? ["📄", ext.toUpperCase()] : ["🔗", "Enlace"]);
+      var meta = [tipo[1], tamanoLegible(x.tamano)].filter(Boolean).join(" · ");
+      return '<li><a href="' + t(url) + '"' + (archivo ? " download" : ' target="_blank" rel="noopener"') + ">" +
+        tipo[0] + " " + t(x.titulo || (archivo ? archivo.split("/").pop() : "Enlace")) + "</a>" +
+        '<span class="evento__docs-meta">' + t(meta) + "</span></li>";
+    }).join("") + "</ul>";
   }
 
   function htmlDocumentos(docs) {

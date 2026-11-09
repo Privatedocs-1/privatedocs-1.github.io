@@ -110,6 +110,14 @@
     .btn--rojo { color: var(--rojo); }
     .aviso--info { background: #eaf1fd; border-color: var(--cobalt); overflow-wrap: anywhere; }
 
+    /* Espacio usado */
+    .almacen { margin-top: 14px; padding: 10px 12px; border-radius: 10px; background: var(--white); border: 1px solid var(--borde); display: flex; flex-direction: column; gap: 6px; font-size: .8rem; color: var(--suave); }
+    .almacen__barra { display: block; height: 6px; border-radius: 999px; background: var(--gris); overflow: hidden; }
+    .almacen__barra span { display: block; height: 100%; background: var(--blue); border-radius: 999px; }
+    .almacen--medio .almacen__barra span { background: var(--gold); }
+    .almacen--alto .almacen__barra span { background: var(--rojo); }
+    .almacen__aviso { color: var(--rojo); font-weight: 700; }
+
     /* Documentos */
     .doc-actual { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; border: 1.5px solid var(--borde); border-radius: 10px; padding: 10px 12px; background: var(--gris); }
     .doc-actual__icono { font-size: 2rem; }
@@ -289,6 +297,6 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js" integrity="sha512-CSBhVREyzHAjAFfBlIBakjoRUKp5h7VSweP0InR/pAJyptH7peuhCsqAI/snV+TwZmXZqoUklpXp6R6wMnYf5Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <script src="fechas.js?v=3"></script>
   <script src="competencias.js?v=1"></script>
-  <script src="admin.js?v=20"></script>
+  <script src="admin.js?v=22"></script>
 </body>
 </html>
