@@ -1,0 +1,2 @@
+﻿Sube aqui las fotos de la pagina (directiva, galeria, portada, logo).
+Usa nombres sin espacios ni acentos, por ejemplo: maria-rivera.jpg

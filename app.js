@@ -210,7 +210,7 @@
   });
 
   // "?v=" evita que el navegador muestre una versión vieja del contenido.
-  fetch("contenido.yml?v=" + Date.now())
+  fetch("contenido.yml?v=" + Date.now(), { cache: "no-store" })
     .then(function (r) {
       if (!r.ok) throw new Error("No se encontró el archivo contenido.yml (código " + r.status + ").");
       return r.text();
