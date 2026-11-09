@@ -130,7 +130,7 @@ albumes:
       - foto: fotos/albumes/album-mw8qehnp/171476-mw8wmim2l6s.webp
         descripcion: ""
         autor: Yadiel Lorenzo
-    recibe_fotos: true
+    recibe_fotos: false
   - id: album-mw8s2ll5
     titulo: FBLA Spirit Day
     fecha: 30 de octubre de 2026
