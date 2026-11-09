@@ -9,7 +9,7 @@
 
   // Opcional: escribe aquí el usuario y repositorio para que no haya
   // que escribirlos al entrar. Si se dejan vacíos, se adivinan solos.
-  var CONFIG = { owner: "", repo: "" };
+  var CONFIG = { owner: "fbladcg", repo: "fbladcg.github.io" };
 
   var ARCHIVO = "contenido.yml";
   var CLAVE_LS = "fbla3281-panel";
@@ -161,8 +161,10 @@
   function adivinarRepo() {
     var h = location.hostname;
     if (/\.github\.io$/i.test(h)) {
-      var seg = location.pathname.split("/").filter(Boolean)[0];
-      return { owner: h.split(".")[0], repo: seg && !/\.html?$/i.test(seg) ? seg : h };
+      // Quita el nombre de la página (admin, admin.html, index.html) del final.
+      var partes = location.pathname.split("/").filter(Boolean);
+      if (partes.length && /^(admin|index)(\.html?)?$/i.test(partes[partes.length - 1])) partes.pop();
+      return { owner: h.split(".")[0], repo: partes[0] || h };
     }
     return { owner: "", repo: "" };
   }
