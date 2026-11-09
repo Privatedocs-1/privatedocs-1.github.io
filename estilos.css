@@ -43,14 +43,22 @@ a { color: var(--blue); }
   border-bottom: 4px solid var(--gold);
 }
 .barra__fila { display: flex; align-items: center; justify-content: space-between; min-height: 64px; }
-.marca { display: flex; align-items: center; gap: 10px; color: var(--white); text-decoration: none; font-weight: 700; font-size: 1.15rem; }
+.marca { display: flex; align-items: center; gap: 10px; color: var(--white); text-decoration: none; font-weight: 700; font-size: 1.15rem; white-space: nowrap; min-width: 0; }
+.barra__fila { position: relative; gap: 12px; }
+.barra .contenedor { max-width: 1360px; }
+.menu-boton { flex: none; }
 .marca__logo { height: 40px; width: auto; }
-.menu { display: flex; gap: 4px; }
+.menu { display: flex; gap: 2px; align-items: center; }
 .menu a {
-  color: var(--white); text-decoration: none; font-weight: 700; font-size: .95rem;
-  padding: 8px 12px; border-radius: 8px;
+  color: var(--white); text-decoration: none; font-weight: 700; font-size: .92rem;
+  padding: 8px 9px; border-radius: 8px;
 }
 .menu a:hover, .menu a:focus-visible { background: var(--blue); }
+.menu a { white-space: nowrap; }
+.menu a.menu__subir { border: 2px solid var(--gold); color: var(--gold); margin-left: 6px; padding: 6px 12px; }
+.menu a.menu__subir:hover, .menu a.menu__subir:focus-visible { background: var(--gold); color: var(--navy); }
+.menu a.menu__connect { background: var(--gold); color: var(--navy); margin-left: 6px; }
+.menu a.menu__connect:hover, .menu a.menu__connect:focus-visible { background: var(--white); color: var(--navy); }
 .menu-boton {
   display: none; background: none; border: 0; color: var(--white);
   font-size: 1.6rem; cursor: pointer; padding: 6px 10px;
@@ -239,15 +247,21 @@ button.boton:disabled { opacity: .7; cursor: progress; transform: none; }
 .error pre { background: var(--white); padding: 14px; border-radius: 8px; white-space: pre-wrap; overflow-wrap: anywhere; }
 
 /* ---------- Celulares ---------- */
-@media (max-width: 760px) {
+/* Menú en pantallas medianas y celulares: botón ☰ */
+@media (max-width: 1300px) {
   .menu-boton { display: block; }
   .menu {
     display: none; position: absolute; left: 0; right: 0; top: 100%;
-    flex-direction: column; background: var(--navy); padding: 8px 16px 16px;
-    border-bottom: 4px solid var(--gold);
+    flex-direction: column; align-items: stretch; gap: 6px; background: var(--navy); padding: 8px 16px 16px;
+    border-bottom: 4px solid var(--gold); max-height: calc(100vh - 70px); overflow-y: auto;
   }
   .menu--abierto { display: flex; }
   .menu a { padding: 12px; }
+  .menu a.menu__subir, .menu a.menu__connect { margin-left: 0; text-align: center; }
+}
+
+@media (max-width: 760px) {
+  .marca { font-size: 1rem; white-space: normal; }
   .evento { grid-template-columns: 1fr; }
   .evento__fecha { border-right: 0; border-bottom: 5px solid var(--gold); padding: 12px; }
   .seccion { padding: 56px 0; }

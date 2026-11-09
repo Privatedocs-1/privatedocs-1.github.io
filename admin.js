@@ -124,7 +124,7 @@
       campos: [
         { k: "correo", l: "Correo electrónico" },
         { k: "fbla_connect", l: "Enlace de FBLA Connect", ph: "https://connect.fbla.org/", defTexto: "https://connect.fbla.org/",
-          nota: "Portal oficial de miembros de FBLA. Déjalo vacío para quitar el botón." },
+          nota: "Portal oficial de miembros de FBLA. Sale en el menú de arriba. Déjalo vacío para quitarlo." },
         { k: "instagram", l: "Enlace de Instagram", ph: "https://www.instagram.com/..." },
         { k: "facebook", l: "Enlace de Facebook", ph: "https://www.facebook.com/..." },
         { k: "tiktok", l: "Enlace de TikTok", ph: "https://www.tiktok.com/@..." }

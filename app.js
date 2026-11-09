@@ -210,10 +210,8 @@
     }
 
     // ---- Contacto ----
-    // FBLA Connect: si no se ha configurado, se usa el portal oficial.
-    var connect = c.fbla_connect === undefined ? "https://connect.fbla.org/" : c.fbla_connect;
     var redes = [
-      ["FBLA Connect ↗", connect], ["Instagram", c.instagram], ["Facebook", c.facebook], ["TikTok", c.tiktok]
+      ["Instagram", c.instagram], ["Facebook", c.facebook], ["TikTok", c.tiktok]
     ].filter(function (r) { return r[1]; });
     if (c.correo || redes.length) {
       html += seccion("contacto", "Contacto",
@@ -226,9 +224,13 @@
     }
 
     app.innerHTML = html;
+    // FBLA Connect (portal de miembros) en el menú. Si no se ha configurado, se usa el portal oficial.
+    var connect = enlaceSeguro(c.fbla_connect === undefined ? "https://connect.fbla.org/" : c.fbla_connect);
     menu.innerHTML = nav.map(function (n) {
       return '<a href="#' + n[0] + '">' + n[1] + "</a>";
-    }).join("");
+    }).join("") +
+      (subidasActivas() ? '<a class="menu__subir" href="subir.html">📤 Subir fotos</a>' : "") +
+      (connect ? '<a class="menu__connect" href="' + t(connect) + '" target="_blank" rel="noopener">FBLA Connect ↗</a>' : "");
     pie.innerHTML = "<p>© " + new Date().getFullYear() + " " + t(cap.nombre) + " · " + t(cap.escuela) + "</p>" +
       '<p class="pie__nota">Capítulo local de Future Business Leaders of America.</p>' +
       '<p class="pie__nota"><a href="admin.html" class="pie__editar">Panel de edición</a></p>';
