@@ -695,9 +695,21 @@
       desc.value = f.descripcion || "";
       desc.addEventListener("input", function () { f.descripcion = desc.value; marcarCambio(); });
       var esPortada = f.foto === portada;
+      // Fotos enviadas por miembros: el nombre del autor se puede corregir.
+      var autor = null;
+      if (f.autor) {
+        var idAutor = "autor-" + (++contador);
+        var campoAutor = el("input", { type: "text", id: idAutor, maxlength: "80", placeholder: "Nombre del autor" });
+        campoAutor.value = f.autor;
+        campoAutor.addEventListener("input", function () { f.autor = campoAutor.value; marcarCambio(); });
+        autor = el("div", { class: "foto-p__campo" }, [
+          el("label", { for: idAutor, class: "foto-p__autor", texto: "📷 Enviada por (sale como crédito)" }),
+          campoAutor
+        ]);
+      }
       rejilla.appendChild(el("div", { class: "foto-p" + (esPortada ? " foto-p--portada" : "") }, [
         el("img", { src: srcDe(f.foto), alt: "", loading: "lazy" }),
-        f.autor ? el("span", { class: "foto-p__autor", texto: "📷 " + f.autor }) : null,
+        autor,
         desc,
         el("div", { class: "foto-p__botones" }, [
           el("button", { class: "btn btn--icono", type: "button", title: "Usar como portada", disabled: esPortada,
@@ -787,6 +799,8 @@
         sel.appendChild(o);
       });
       var aprobada = p.estado === "aprobada";
+      var nombre = el("input", { type: "text", maxlength: "80", placeholder: "Nombre del autor", "aria-label": "Nombre del autor (crédito)" });
+      nombre.value = p.nombre || "";
       var info = [p.albumTitulo ? "Para: " + p.albumTitulo : "", p.nombre ? "Enviada por: " + p.nombre : "", p.fecha ? new Date(p.fecha).toLocaleDateString("es-PR") : ""]
         .filter(Boolean).join(" · ");
       rejilla.appendChild(el("div", { class: "foto-p" + (aprobada ? " foto-p--aprobada" : ""), "data-pendiente": p.id }, [
@@ -797,8 +811,9 @@
           ? el("strong", { class: "foto-p__ok", texto: "✓ Aprobada — se publica al «Guardar cambios»" })
           : el("div", { class: "foto-p__aprobar" }, [
             sel,
+            el("div", { class: "foto-p__campo" }, [el("span", { class: "foto-p__autor", texto: "📷 Crédito" }), nombre]),
             el("div", { class: "foto-p__botones" }, [
-              el("button", { class: "btn btn--azul btn--chico", type: "button", onclick: function () { aprobar(p, sel.value, zona); } }, ["✓ Aprobar"]),
+              el("button", { class: "btn btn--azul btn--chico", type: "button", onclick: function () { p.nombre = nombre.value.trim(); aprobar(p, sel.value, zona); } }, ["✓ Aprobar"]),
               el("button", { class: "btn btn--peligro btn--chico", type: "button", onclick: function () { rechazar(p, zona); } }, ["✕ Rechazar"])
             ])
           ])
