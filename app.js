@@ -82,7 +82,11 @@
     DATOS = d;
     var cap = d.capitulo || {};
     document.title = (cap.nombre || "FBLA") + " — " + (cap.escuela || "");
-    document.getElementById("marca-texto").textContent = cap.nombre || "FBLA";
+    // Si el nombre tiene " - ", la segunda parte va en la línea de abajo.
+    var partesNombre = String(cap.nombre || "FBLA").split(/\s+[-–—]\s+/);
+    document.getElementById("marca-texto").innerHTML = partesNombre.length > 1
+      ? '<span class="marca__linea">' + t(partesNombre[0]) + '</span><span class="marca__linea marca__linea--sub">' + t(partesNombre.slice(1).join(" - ")) + "</span>"
+      : t(partesNombre[0]);
     if (cap.logo) {
       var logo = document.getElementById("logo");
       logo.src = enlaceSeguro(cap.logo);

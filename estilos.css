@@ -49,7 +49,9 @@ a { color: var(--blue); }
 .menu-boton { flex: none; }
 /* Logo: usar la versión blanca oficial de FBLA (la barra es azul marino). */
 .marca__logo { height: 34px; width: auto; flex: none; }
-.marca--con-logo #marca-texto { font-size: .85rem; line-height: 1.2; white-space: normal; max-width: 180px; padding-left: 10px; border-left: 2px solid rgba(255, 255, 255, .35); }
+.marca--con-logo #marca-texto { font-size: .85rem; line-height: 1.2; padding-left: 10px; border-left: 2px solid rgba(255, 255, 255, .35); }
+.marca__linea { display: block; white-space: nowrap; }
+.marca__linea--sub { font-weight: 400; opacity: .9; }
 .menu { display: flex; gap: 2px; align-items: center; }
 .menu a {
   color: var(--white); text-decoration: none; font-weight: 700; font-size: .92rem;
