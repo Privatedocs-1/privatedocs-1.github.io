@@ -36,6 +36,11 @@ eventos:
     hora: ""
     lugar: Universidad Politécnica, San Juan
     descripcion: Registro disponible hasta el 6 de noviembre de 2026.
+  - nombre: Divulgación del Programa de Administración de Empresas
+    fecha: Enero 2027
+    hora: ""
+    lugar: Escuela Superior Dr. Carlos González
+    descripcion: ""
 directiva:
   - nombre: Victoria A. Concepción Traverso
     puesto: Presidenta
