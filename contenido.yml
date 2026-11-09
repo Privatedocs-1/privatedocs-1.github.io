@@ -89,6 +89,14 @@ instagram:
   behold: https://feeds.behold.so/F9QJVJsOjOHNYke4Xg6r
   cantidad: "1"
 albumes:
+  - id: album-mw8rzoot
+    titulo: Goofy Games Estatales FBLA 2026
+    fecha: 5 de noviembre de 2026
+    lugar: Coliseo Manuel E. "Petaca" Iguina
+    descripcion: ""
+    publicado: true
+    portada: ""
+    fotos: []
   - id: album-mw8qehnp
     titulo: Iniciación Local FBLA 2026
     fecha: 8 de diciembre de 2026
