@@ -205,6 +205,13 @@
       nav.push(["logros", "Logros"]);
     }
 
+    // ---- Documentos para descargar ----
+    var documentos = lista(d.documentos).filter(function (x) { return x.titulo && (x.archivo || x.enlace); });
+    if (documentos.length) {
+      html += seccion("documentos", "Documentos", htmlDocumentos(documentos));
+      nav.push(["documentos", "Documentos"]);
+    }
+
     // ---- Álbumes de fotos ----
     var albumes = albumesPublicados();
     if (albumes.length) {
@@ -430,6 +437,38 @@
       boton.disabled = false;
       boton.textContent = texto;
     });
+  }
+
+  // ---------- Documentos ----------
+  var TIPOS_DOC = {
+    pdf: ["📕", "PDF"], doc: ["📘", "Word"], docx: ["📘", "Word"], xls: ["📗", "Excel"], xlsx: ["📗", "Excel"],
+    ppt: ["📙", "PowerPoint"], pptx: ["📙", "PowerPoint"], jpg: ["🖼", "Imagen"], jpeg: ["🖼", "Imagen"], png: ["🖼", "Imagen"],
+    txt: ["📄", "Texto"], csv: ["📗", "CSV"]
+  };
+  function tamanoLegible(b) {
+    b = Number(b) || 0;
+    if (!b) return "";
+    return b >= 1048576 ? (b / 1048576).toFixed(1).replace(".0", "") + " MB" : Math.max(1, Math.round(b / 1024)) + " KB";
+  }
+
+  function htmlDocumentos(docs) {
+    return '<div class="documentos">' + docs.map(function (x) {
+      var archivo = x.archivo ? enlaceSeguro(x.archivo) : "";
+      var url = archivo || enlaceSeguro(x.enlace);
+      var ext = archivo ? archivo.split(".").pop().toLowerCase() : "";
+      var tipo = TIPOS_DOC[ext] || (archivo ? ["📄", ext.toUpperCase()] : ["🔗", "Enlace"]);
+      var meta = [tipo[1], tamanoLegible(x.tamano)].filter(Boolean).join(" · ");
+      var botones = archivo
+        ? (ext === "pdf" ? '<a class="boton boton--borde boton--chico" href="' + t(url) + '" target="_blank" rel="noopener">👁 Ver</a>' : "") +
+          '<a class="boton boton--acento boton--chico" href="' + t(url) + '" download>⬇ Descargar</a>'
+        : '<a class="boton boton--acento boton--chico" href="' + t(url) + '" target="_blank" rel="noopener">Abrir ↗</a>';
+      return '<article class="documento">' +
+        '<span class="documento__icono" aria-hidden="true">' + tipo[0] + "</span>" +
+        '<div class="documento__info"><h3>' + t(x.titulo) + "</h3>" +
+        (x.descripcion ? "<p>" + t(x.descripcion) + "</p>" : "") +
+        '<span class="documento__meta">' + t(meta) + "</span></div>" +
+        '<div class="documento__botones">' + botones + "</div></article>";
+    }).join("") + "</div>";
   }
 
   // ---------- Logros agrupados por año académico (desplegables) ----------

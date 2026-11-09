@@ -74,6 +74,16 @@
       ayuda: "Cada día se revisan las publicaciones nuevas de Instagram y se proponen eventos y logros. Revisa, edita lo que haga falta y apruébalos; se publican al «Guardar cambios»." },
     { key: "_visitas", titulo: "📊 Visitas", tipo: "visitas",
       ayuda: "Cuántas personas visitan la página. Cada navegador cuenta una vez por día (recargar no suma). No se guardan datos personales ni se usan cookies." },
+    { key: "documentos", titulo: "📄 Documentos", tipo: "lista", item: "documento",
+      ayuda: "Archivos que los miembros pueden descargar: permisos, reglamento, código de vestimenta, calendario… Sube el archivo o pega un enlace (Google Drive, FBLA).",
+      extraResumen: function (d) { return d.archivo ? tipoDocumento(d.archivo).nombre + (d.tamano ? " · " + tamanoLegible(d.tamano) : "") : d.enlace ? "Enlace" : ""; },
+      campos: [
+        { k: "titulo", l: "Título", ph: "Permiso de viaje — Conferencia Estatal" },
+        { k: "descripcion", l: "Descripción (opcional)", tipo: "area", ph: "Para qué es y cuándo hay que entregarlo" },
+        { k: "archivo", l: "Archivo", tipo: "archivo" },
+        { k: "enlace", l: "…o enlace (opcional)", ph: "https://drive.google.com/...",
+          nota: "Usa el enlace solo si el documento está en otro sitio. Si subes un archivo, se usa el archivo." }
+      ] },
     { key: "directiva", titulo: "👥 Directiva", tipo: "lista", item: "oficial",
       ayuda: "Oficiales del capítulo y consejero(a). Si no hay foto, se muestran las iniciales.",
       campos: [
@@ -237,7 +247,7 @@
   // Todas las rutas "fotos/..." que se usan en el contenido.
   function rutasFotos(valor, acc) {
     acc = acc || {};
-    if (typeof valor === "string") { if (/^fotos\//.test(valor)) acc[valor] = true; }
+    if (typeof valor === "string") { if (/^(fotos|docs)\//.test(valor)) acc[valor] = true; }
     else if (Array.isArray(valor)) valor.forEach(function (v) { rutasFotos(v, acc); });
     else if (valor && typeof valor === "object") Object.keys(valor).forEach(function (k) { rutasFotos(valor[k], acc); });
     return acc;
@@ -648,6 +658,7 @@
     }
     if (tipo === "foto") return campoFoto(obj, c);
     if (tipo === "fechaEvento") return campoFechaEvento(obj, c);
+    if (tipo === "archivo") return campoArchivo(obj, c);
     if (tipo === "anio") {
       if (vacio(obj[c.k])) obj[c.k] = FX.anioAcademicoDeTexto((obj.titulo || "") + " " + (obj.detalle || "")) || FX.anioAcademicoActual();
       var sel = el("select", { id: id, class: "selector-simple" });
@@ -740,6 +751,91 @@
   }
 
   function srcDe(ruta) { return vistas[ruta] || ruta; }
+
+  // ---------- Documentos (PDF, Word, Excel…) ----------
+  var MAX_DOC = 25 * 1024 * 1024;   // 25 MB por archivo
+  var TIPOS_DOC = {
+    pdf: ["📕", "PDF"], doc: ["📘", "Word"], docx: ["📘", "Word"], xls: ["📗", "Excel"], xlsx: ["📗", "Excel"],
+    ppt: ["📙", "PowerPoint"], pptx: ["📙", "PowerPoint"], jpg: ["🖼", "Imagen"], jpeg: ["🖼", "Imagen"], png: ["🖼", "Imagen"],
+    txt: ["📄", "Texto"], csv: ["📗", "CSV"]
+  };
+  function tipoDocumento(ruta) {
+    var ext = String(ruta || "").split(".").pop().toLowerCase();
+    var t = TIPOS_DOC[ext] || ["📄", ext.toUpperCase()];
+    return { icono: t[0], nombre: t[1], ext: ext };
+  }
+  function tamanoLegible(b) {
+    b = Number(b) || 0;
+    return b >= 1048576 ? (b / 1048576).toFixed(1).replace(".0", "") + " MB" : Math.max(1, Math.round(b / 1024)) + " KB";
+  }
+
+  function leerComoBase64(file) {
+    return new Promise(function (ok, mal) {
+      var r = new FileReader();
+      r.onload = function () { ok(String(r.result).split(",")[1] || ""); };
+      r.onerror = function () { mal(new Error("No se pudo leer el archivo.")); };
+      r.readAsDataURL(file);
+    });
+  }
+
+  function campoArchivo(obj, c) {
+    var cont = el("div", { class: "campo" });
+    function dibujar() {
+      cont.innerHTML = "";
+      cont.appendChild(el("span", { class: "campo__titulo", texto: c.l }));
+      var input = el("input", { type: "file", hidden: true,
+        accept: ".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.jpg,.jpeg,.png,.txt,.csv" });
+      input.addEventListener("change", function () {
+        var f = input.files[0];
+        if (!f) return;
+        var ext = f.name.split(".").pop().toLowerCase();
+        if (!TIPOS_DOC[ext]) return avisar("Ese tipo de archivo no se acepta. Usa PDF, Word, Excel, PowerPoint o imagen.", true);
+        if (f.size > MAX_DOC) return avisar("El archivo pesa " + tamanoLegible(f.size) + ". El máximo es 25 MB.", true);
+        ocupado("Preparando archivo…");
+        leerComoBase64(f).then(function (b64) {
+          var ruta = "docs/" + nombreSeguro(f.name, ext);
+          porSubir[ruta] = b64;
+          obj[c.k] = ruta;
+          obj.tamano = f.size;
+          if (vacio(obj.titulo)) {
+            obj.titulo = f.name.replace(/\.[^.]+$/, "");
+            // Muestra el título nuevo en su cuadro y en el encabezado del elemento.
+            var item = cont.closest(".item");
+            var caja = item && item.querySelector(".item__cuerpo input[type=text]");
+            if (caja && !caja.value) caja.value = obj.titulo;
+            var tit = item && item.querySelector(".item__titulo");
+            if (tit) tit.textContent = obj.titulo;
+          }
+          marcarCambio();
+          dibujar();
+          avisar("Archivo listo. Se publica al «Guardar cambios».");
+        }).catch(function (e) { avisar(e.message, true); })
+          .then(function () { ocupado(null); });
+      });
+      var ruta = obj[c.k];
+      if (ruta) {
+        var t = tipoDocumento(ruta);
+        cont.appendChild(el("div", { class: "doc-actual" }, [
+          el("span", { class: "doc-actual__icono", texto: t.icono }),
+          el("div", { class: "doc-actual__info" }, [
+            el("strong", { texto: ruta.split("/").pop() }),
+            el("span", { texto: t.nombre + (obj.tamano ? " · " + tamanoLegible(obj.tamano) : "") + (porSubir[ruta] ? " · sin publicar todavía" : "") })
+          ]),
+          el("div", { class: "foto__botones" }, [
+            el("button", { class: "btn btn--azul btn--chico", type: "button", onclick: function () { input.click(); } }, ["Cambiar"]),
+            el("button", { class: "btn btn--borde btn--chico", type: "button",
+              onclick: function () { obj[c.k] = ""; delete obj.tamano; marcarCambio(); dibujar(); } }, ["Quitar"])
+          ])
+        ]));
+      } else {
+        cont.appendChild(el("button", { class: "btn btn--grande", type: "button", onclick: function () { input.click(); } },
+          ["📎 Subir archivo (PDF, Word, Excel, PowerPoint o imagen · máx. 25 MB)"]));
+      }
+      cont.appendChild(input);
+    }
+    dibujar();
+    return cont;
+  }
 
   // ---------- Fecha de un evento (con calendario en español) ----------
   var FX = window.FechasFBLA;

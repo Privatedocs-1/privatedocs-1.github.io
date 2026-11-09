@@ -30,6 +30,7 @@ todo se hace con formularios en el **Panel de edición**.
 | 📤 **Fotos de miembros** | Aprobar o rechazar fotos que envían los miembros |
 | 👥 **Directiva** | Añadir o quitar oficiales y subir sus fotos |
 | 🏆 **Logros** | Añadir o quitar premios, con su **competencia de FBLA** (lista oficial) y su **año académico**. En la página salen desplegables por año; el año actual se ve abierto. |
+| 📄 **Documentos** | Subir archivos para descargar (PDF, Word, Excel, PowerPoint o imagen, máx. 25 MB) o pegar un enlace. Si quitas un documento, el archivo se borra al guardar. |
 | 💡 **Sugerencias de Instagram** | Cada día se proponen eventos y logros sacados de Instagram. Revísalos, edítalos y apruébalos o descártalos. |
 | 📊 **Visitas** | Cuántas personas visitan la página (una vez por día por navegador; los administradores no cuentan). |
 | 📷 **Instagram** | Escoger qué publicaciones de Instagram salen en la página |
