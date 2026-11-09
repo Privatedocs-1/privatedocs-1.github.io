@@ -12,7 +12,7 @@ capitulo:
   foto_portada: ""
   logo: ""
 unete:
-  activo: true
+  activo: false
   titulo: ¡Únete a FBLA!
   texto: ¿Te interesan los negocios, el liderazgo o la tecnología? Forma parte de nuestro capítulo y compite a nivel estatal y nacional.
   boton: Llenar solicitud
