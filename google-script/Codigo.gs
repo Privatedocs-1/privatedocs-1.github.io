@@ -165,3 +165,11 @@ function resolver(id, aprobar) {
   else f.setTrashed(true);
   return {};
 }
+
+// Ejecuta esta función UNA VEZ desde el editor (▷ Ejecutar) para darle al
+// script los permisos de Drive y de conectarse con GitHub.
+function autorizar() {
+  UrlFetchApp.fetch('https://api.github.com/zen');
+  carpeta('Pendientes');
+  Logger.log('¡Listo! Permisos concedidos.');
+}
