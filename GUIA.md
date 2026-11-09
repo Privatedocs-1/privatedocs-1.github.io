@@ -25,7 +25,7 @@ todo se hace con formularios en el **Panel de edición**.
 | Parte | Qué puedes hacer |
 |---|---|
 | 📢 **Anuncios** | Añadir, editar, mover y eliminar anuncios |
-| 📅 **Eventos** | Añadir, editar, mover y eliminar eventos |
+| 📅 **Eventos** | Añadir, editar, mover y eliminar eventos. La fecha se escoge con un calendario: **Un día**, **Varios días** (ej.: Semana de FBLA), **Durante un mes** (sin día exacto) o **Por anunciar**. Los de un día o varios días tienen cuenta regresiva en la página; el próximo muestra un reloj en vivo. |
 | 📸 **Álbumes de fotos** | Crear un álbum por evento, subir fotos, escoger la portada y publicarlo |
 | 📤 **Fotos de miembros** | Aprobar o rechazar fotos que envían los miembros |
 | 👥 **Directiva** | Añadir o quitar oficiales y subir sus fotos |

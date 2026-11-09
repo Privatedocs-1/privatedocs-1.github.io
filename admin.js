@@ -40,8 +40,9 @@
       ayuda: "Próximas actividades. Ponlas en orden de fecha (la más cercana primero).",
       campos: [
         { k: "nombre", l: "Nombre del evento" },
-        { k: "fecha", l: "Fecha", ph: "20 de noviembre de 2026" },
-        { k: "hora", l: "Hora (opcional)", ph: "11:00 AM" },
+        { k: "fecha", l: "Fecha", tipo: "fechaEvento" },
+        { k: "hora", l: "Hora (opcional)", ph: "9:00 AM",
+          nota: "Si la escribes (por ejemplo 9:00 AM), la cuenta regresiva llega hasta esa hora." },
         { k: "lugar", l: "Lugar (opcional)" },
         { k: "descripcion", l: "Descripción (opcional)", tipo: "area" }
       ] },
@@ -371,6 +372,8 @@
       }
       delete datos.galeria;
     }
+    // Fechas de eventos escritas a mano → formato nuevo (día, varios días, mes o por anunciar).
+    if (Array.isArray(datos.eventos)) datos.eventos.forEach(normalizarFechaEvento);
     rutasOriginales = rutasFotos(datos);
   }
 
@@ -422,7 +425,7 @@
 
   function resumenDe(def, obj) {
     return def.campos.map(function (c) {
-      return c.tipo === "foto" || c.tipo === "lista" || c.tipo === "oculto" ? "" : obj[c.k];
+      return c.tipo === "foto" || c.tipo === "lista" || c.tipo === "oculto" || c.tipo === "fechaEvento" ? "" : obj[c.k];
     }).filter(Boolean)[0] || "";
   }
 
@@ -507,6 +510,7 @@
       ])]);
     }
     if (tipo === "foto") return campoFoto(obj, c);
+    if (tipo === "fechaEvento") return campoFechaEvento(obj, c);
 
     if (obj[c.k] === undefined && c.defTexto) obj[c.k] = c.defTexto;
     var valor = obj[c.k] === undefined || obj[c.k] === null ? "" : String(obj[c.k]);
@@ -539,6 +543,189 @@
   }
 
   function srcDe(ruta) { return vistas[ruta] || ruta; }
+
+  // ---------- Fecha de un evento (con calendario en español) ----------
+  var FX = window.FechasFBLA;
+  var TIPOS_FECHA = [["dia", "Un día"], ["rango", "Varios días"], ["mes", "Durante un mes"], ["pendiente", "Por anunciar"]];
+
+  // Convierte las fechas viejas escritas a mano al formato nuevo.
+  function normalizarFechaEvento(ev) {
+    if (!ev || typeof ev !== "object") return;
+    if (["dia", "rango", "mes", "pendiente"].indexOf(ev.tipo_fecha) >= 0) return;
+    if (vacio(ev.fecha)) { ev.tipo_fecha = "dia"; return; }
+    var p = FX.desdeTexto(ev.fecha);
+    Object.keys(p).forEach(function (k) { ev[k] = p[k]; });
+  }
+
+  function campoFechaEvento(obj, c) {
+    normalizarFechaEvento(obj);
+    var cont = el("div", { class: "campo" });
+    var resumen;
+
+    function actualizarResumen() {
+      var f = FX.leer(obj);
+      var conCuenta = f.tipo === "dia" || f.tipo === "rango";
+      var aviso = "";
+      if ((obj.tipo_fecha === "dia" || obj.tipo_fecha === "rango") && !FX.deISO(obj.inicio)) aviso = "⚠ Escoge el día. ";
+      else if (obj.tipo_fecha === "rango" && !FX.deISO(obj.fin)) aviso = "⚠ Escoge el último día. ";
+      else if (obj.tipo_fecha === "mes" && !FX.deMes(obj.mes)) aviso = "⚠ Escoge el mes. ";
+      resumen.textContent = aviso + "Se verá así: «" + FX.texto(obj) + "» · " +
+        (conCuenta ? "⏳ Con cuenta regresiva" : "Sin cuenta regresiva");
+      resumen.style.color = aviso ? "#c0392b" : "";
+    }
+    function cambio() { marcarCambio(); actualizarResumen(); }
+
+    function dibujar() {
+      cont.innerHTML = "";
+      cont.appendChild(el("span", { class: "campo__titulo", texto: c.l }));
+      var grupo = el("div", { class: "tipos-fecha", role: "radiogroup", "aria-label": "Tipo de fecha" });
+      TIPOS_FECHA.forEach(function (tp) {
+        var activo = obj.tipo_fecha === tp[0];
+        grupo.appendChild(el("button", {
+          type: "button", role: "radio", "aria-checked": activo ? "true" : "false",
+          class: "tipo-fecha" + (activo ? " tipo-fecha--activo" : ""),
+          onclick: function () {
+            if (obj.tipo_fecha === tp[0]) return;
+            obj.tipo_fecha = tp[0];
+            if (tp[0] === "rango" && FX.deISO(obj.inicio) && !FX.deISO(obj.fin)) obj.fin = "";
+            marcarCambio(); dibujar();
+          }
+        }, [tp[1]]));
+      });
+      cont.appendChild(grupo);
+
+      var sel = el("div", { class: "selectores-fecha" });
+      if (obj.tipo_fecha === "dia") {
+        sel.appendChild(selectorFecha("Día del evento", obj.inicio, function (v) { obj.inicio = v; cambio(); }));
+      } else if (obj.tipo_fecha === "rango") {
+        sel.appendChild(selectorFecha("Primer día", obj.inicio, function (v) {
+          obj.inicio = v;
+          if (FX.deISO(obj.fin) && obj.fin < v) obj.fin = "";
+          marcarCambio(); dibujar();
+        }));
+        sel.appendChild(selectorFecha("Último día", obj.fin, function (v) { obj.fin = v; cambio(); }, { min: obj.inicio }));
+      } else if (obj.tipo_fecha === "mes") {
+        sel.appendChild(selectorMes("Mes del evento", obj.mes, function (v) { obj.mes = v; cambio(); }));
+      } else {
+        var idTxt = "c" + (++contador);
+        var txt = el("input", { type: "text", id: idTxt, placeholder: "Por anunciar" });
+        txt.value = obj.fecha_texto || "";
+        txt.addEventListener("input", function () { obj.fecha_texto = txt.value; cambio(); });
+        sel.appendChild(el("div", { class: "selector" }, [el("label", { for: idTxt, class: "selector__etiqueta", texto: "Texto que se mostrará (opcional)" }), txt]));
+      }
+      cont.appendChild(sel);
+      resumen = el("p", { class: "campo__nota resumen-fecha" });
+      cont.appendChild(resumen);
+      actualizarResumen();
+    }
+    dibujar();
+    return cont;
+  }
+
+  // Solo un calendario abierto a la vez; se cierra al hacer clic fuera o con Escape.
+  var popActual = null;
+  function cerrarPop() { if (popActual) { popActual.cerrar(); popActual = null; } }
+  document.addEventListener("mousedown", function (e) {
+    if (popActual && !popActual.contenedor.contains(e.target)) cerrarPop();
+  });
+  document.addEventListener("keydown", function (e) { if (e.key === "Escape") cerrarPop(); });
+
+  function selectorBase(etiqueta, textoBoton, pintarContenido) {
+    var id = "c" + (++contador);
+    var env = el("div", { class: "selector" });
+    var boton = el("button", { type: "button", id: id, class: "selector__boton", "aria-haspopup": "dialog", "aria-expanded": "false" });
+    var pop = null;
+    function cerrar() { if (pop) { pop.remove(); pop = null; boton.setAttribute("aria-expanded", "false"); } }
+    function abrir() {
+      cerrarPop();
+      pop = el("div", { class: "calendario", role: "dialog", "aria-label": etiqueta });
+      env.appendChild(pop);
+      boton.setAttribute("aria-expanded", "true");
+      popActual = { contenedor: env, cerrar: cerrar };
+      pintarContenido(pop, function () { cerrar(); popActual = null; refrescar(); boton.focus(); });
+    }
+    function refrescar() {
+      var t = textoBoton();
+      boton.textContent = "📅 " + (t || "Escoge…");
+      boton.classList.toggle("selector__boton--vacio", !t);
+    }
+    boton.addEventListener("click", function () { if (pop) { cerrar(); popActual = null; } else abrir(); });
+    refrescar();
+    env.appendChild(el("label", { for: id, class: "selector__etiqueta", texto: etiqueta }));
+    env.appendChild(boton);
+    return env;
+  }
+
+  function selectorFecha(etiqueta, valor, alCambiar, opciones) {
+    opciones = opciones || {};
+    var vista;
+    return selectorBase(etiqueta, function () { var d = FX.deISO(valor); return d ? FX.largo(d) : ""; }, function (pop, listo) {
+      var base = FX.deISO(valor) || FX.deISO(opciones.min) || new Date();
+      vista = { y: base.getFullYear(), m: base.getMonth() };
+      var hoyISO = FX.aISO(new Date());
+      function pintar() {
+        pop.innerHTML = "";
+        pop.appendChild(el("div", { class: "calendario__cabeza" }, [
+          el("button", { type: "button", class: "calendario__nav", "aria-label": "Mes anterior",
+            onclick: function () { vista.m--; if (vista.m < 0) { vista.m = 11; vista.y--; } pintar(); } }, ["‹"]),
+          el("strong", { texto: FX.textoMes(vista) }),
+          el("button", { type: "button", class: "calendario__nav", "aria-label": "Mes siguiente",
+            onclick: function () { vista.m++; if (vista.m > 11) { vista.m = 0; vista.y++; } pintar(); } }, ["›"])
+        ]));
+        var rejilla = el("div", { class: "calendario__dias" });
+        FX.DIAS_CORTOS.forEach(function (d) { rejilla.appendChild(el("span", { class: "calendario__sem", texto: d })); });
+        var primero = new Date(vista.y, vista.m, 1).getDay();
+        var total = new Date(vista.y, vista.m + 1, 0).getDate();
+        for (var i = 0; i < primero; i++) rejilla.appendChild(el("span"));
+        for (var dia = 1; dia <= total; dia++) {
+          (function (dia) {
+            var iso = FX.aISO(new Date(vista.y, vista.m, dia));
+            var deshabilitado = opciones.min && FX.deISO(opciones.min) && iso < opciones.min;
+            rejilla.appendChild(el("button", {
+              type: "button", texto: String(dia), disabled: deshabilitado,
+              "aria-label": FX.largo(new Date(vista.y, vista.m, dia)),
+              class: "calendario__dia" + (iso === valor ? " calendario__dia--sel" : "") + (iso === hoyISO ? " calendario__dia--hoy" : ""),
+              onclick: function () { valor = iso; alCambiar(iso); listo(); }
+            }));
+          })(dia);
+        }
+        pop.appendChild(rejilla);
+        pop.appendChild(el("div", { class: "calendario__pie" }, [
+          el("button", { type: "button", class: "btn btn--borde btn--chico", onclick: function () {
+            var b = new Date(); vista = { y: b.getFullYear(), m: b.getMonth() }; pintar();
+          } }, ["Ir a hoy"]),
+          el("button", { type: "button", class: "btn btn--borde btn--chico", onclick: function () { listo(); } }, ["Cerrar"])
+        ]));
+      }
+      pintar();
+    });
+  }
+
+  function selectorMes(etiqueta, valor, alCambiar) {
+    return selectorBase(etiqueta, function () { var m = FX.deMes(valor); return m ? FX.textoMes(m) : ""; }, function (pop, listo) {
+      var actual = FX.deMes(valor);
+      var y = actual ? actual.y : new Date().getFullYear();
+      function pintar() {
+        pop.innerHTML = "";
+        pop.appendChild(el("div", { class: "calendario__cabeza" }, [
+          el("button", { type: "button", class: "calendario__nav", "aria-label": "Año anterior", onclick: function () { y--; pintar(); } }, ["‹"]),
+          el("strong", { texto: String(y) }),
+          el("button", { type: "button", class: "calendario__nav", "aria-label": "Año siguiente", onclick: function () { y++; pintar(); } }, ["›"])
+        ]));
+        var rejilla = el("div", { class: "calendario__meses" });
+        FX.MESES.forEach(function (nombre, i) {
+          var v = y + "-" + (i < 9 ? "0" : "") + (i + 1);
+          rejilla.appendChild(el("button", {
+            type: "button", texto: mayus(nombre),
+            class: "calendario__mes" + (v === valor ? " calendario__dia--sel" : ""),
+            onclick: function () { valor = v; alCambiar(v); listo(); }
+          }));
+        });
+        pop.appendChild(rejilla);
+      }
+      pintar();
+    });
+  }
 
   function campoFoto(obj, c) {
     var cont = el("div", { class: "campo" });
@@ -931,7 +1118,7 @@
       return valor.map(function (o) { return limpiarObjeto(def.campos, o); })
         .filter(function (o) {
           return def.campos.some(function (c) {
-            if (c.tipo === "check" || c.tipo === "oculto") return false;
+            if (c.tipo === "check" || c.tipo === "oculto" || c.tipo === "fechaEvento") return false;
             if (c.tipo === "lista") return o[c.k] && o[c.k].length;
             return !vacio(o[c.k]);
           });
@@ -943,7 +1130,16 @@
     var r = {};
     Object.keys(o || {}).forEach(function (k) { r[k] = o[k]; });
     campos.forEach(function (c) {
-      if (c.tipo === "lista") r[c.k] = limpiar(c, r[c.k] || []);
+      if (c.tipo === "fechaEvento") {
+        normalizarFechaEvento(r);
+        var tf = r.tipo_fecha;
+        if (tf !== "dia" && tf !== "rango") delete r.inicio;
+        if (tf !== "rango") delete r.fin;
+        if (tf !== "mes") delete r.mes;
+        if (tf !== "pendiente") delete r.fecha_texto;
+        r[c.k] = FX.texto(r);   // texto en español (también lo leen versiones viejas de la página)
+      }
+      else if (c.tipo === "lista") r[c.k] = limpiar(c, r[c.k] || []);
       else if (c.tipo === "check") r[c.k] = c.def === false ? r[c.k] === true : r[c.k] !== false;
       else if (r[c.k] === undefined && c.defTexto) r[c.k] = c.defTexto;
       else r[c.k] = vacio(r[c.k]) ? "" : String(r[c.k]).trim();

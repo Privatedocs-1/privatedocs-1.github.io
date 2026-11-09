@@ -109,6 +109,31 @@
     .btn--rojo { color: var(--rojo); }
     .aviso--info { background: #eaf1fd; border-color: var(--cobalt); overflow-wrap: anywhere; }
 
+    /* Fecha de eventos */
+    .tipos-fecha { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+    .tipo-fecha { border: 1.5px solid var(--borde); background: var(--white); color: var(--navy); font-weight: 700; padding: 8px 14px; border-radius: 999px; cursor: pointer; }
+    .tipo-fecha--activo { background: var(--navy); border-color: var(--navy); color: var(--white); }
+    .selectores-fecha { display: flex; flex-wrap: wrap; gap: 12px; }
+    .selector { position: relative; display: flex; flex-direction: column; gap: 4px; min-width: 220px; flex: 1 1 220px; }
+    .selector__etiqueta { font-size: .85rem; font-weight: 700; color: var(--suave); }
+    .selector input[type=text] { width: 100%; padding: 10px 12px; border: 1.5px solid var(--borde); border-radius: 8px; }
+    .selector__boton { text-align: left; padding: 10px 12px; border: 1.5px solid var(--borde); border-radius: 8px; background: var(--white); color: var(--black); cursor: pointer; font-weight: 700; }
+    .selector__boton:hover, .selector__boton[aria-expanded=true] { border-color: var(--cobalt); }
+    .selector__boton--vacio { color: var(--suave); font-weight: 400; }
+    .resumen-fecha { font-weight: 700; }
+    .calendario { position: absolute; top: 100%; left: 0; z-index: 30; margin-top: 6px; background: var(--white); border: 1.5px solid var(--borde); border-radius: 12px; box-shadow: 0 12px 32px rgba(10,46,127,.18); padding: 12px; width: 300px; max-width: calc(100vw - 48px); }
+    .calendario__cabeza { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; color: var(--navy); }
+    .calendario__nav { border: 0; background: var(--gris); color: var(--navy); width: 34px; height: 34px; border-radius: 50%; font-size: 1.3rem; cursor: pointer; }
+    .calendario__dias { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; text-align: center; }
+    .calendario__sem { font-size: .75rem; font-weight: 700; color: var(--suave); padding: 4px 0; }
+    .calendario__dia, .calendario__mes { border: 0; background: none; padding: 8px 0; border-radius: 8px; cursor: pointer; color: var(--black); font: inherit; }
+    .calendario__dia:hover, .calendario__mes:hover { background: var(--gris); }
+    .calendario__dia:disabled { color: #c3c9d6; cursor: default; background: none; }
+    .calendario__dia--hoy { box-shadow: inset 0 0 0 2px var(--gold); font-weight: 700; }
+    .calendario__dia--sel, .calendario__dia--sel:hover { background: var(--navy); color: var(--white); font-weight: 700; }
+    .calendario__meses { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+    .calendario__pie { display: flex; justify-content: space-between; margin-top: 10px; }
+
     /* Entrada */
     .login { max-width: 560px; margin: 40px auto; padding: 0 16px; }
     .login .panel { padding: 28px; }
@@ -201,6 +226,7 @@
   <div class="toast" id="toast" hidden></div>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js" integrity="sha512-CSBhVREyzHAjAFfBlIBakjoRUKp5h7VSweP0InR/pAJyptH7peuhCsqAI/snV+TwZmXZqoUklpXp6R6wMnYf5Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-  <script src="admin.js?v=10"></script>
+  <script src="fechas.js?v=2"></script>
+  <script src="admin.js?v=11"></script>
 </body>
 </html>

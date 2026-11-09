@@ -143,15 +143,7 @@
     // ---- Eventos ----
     var eventos = lista(d.eventos);
     if (eventos.length) {
-      html += seccion("eventos", "Próximos eventos",
-        '<ol class="eventos">' + eventos.map(function (e) {
-          var meta = [e.hora, e.lugar].filter(Boolean).map(t).join(" · ");
-          return '<li class="evento"><div class="evento__fecha">' + t(e.fecha) + "</div>" +
-            '<div class="evento__info"><h3>' + t(e.nombre) + "</h3>" +
-            (meta ? '<p class="evento__meta">' + meta + "</p>" : "") +
-            (e.descripcion ? "<p>" + t(e.descripcion) + "</p>" : "") +
-            "</div></li>";
-        }).join("") + "</ol>");
+      html += seccion("eventos", "Próximos eventos", htmlEventos(eventos));
       nav.push(["eventos", "Eventos"]);
     }
 
@@ -242,7 +234,71 @@
       '<p class="pie__nota"><a href="admin.html" class="pie__editar">Panel de edición</a></p>';
 
     if (feed || fijas.length) mostrarInstagram(feed, fijas, cantidadInstagram(ig.cantidad));
+    iniciarCuentaRegresiva();
     revisarRuta();
+  }
+
+  // ---------- Eventos y cuenta regresiva ----------
+  var F = window.FechasFBLA;
+
+  function htmlEventos(eventos) {
+    var ahora = new Date();
+    // El próximo evento con fecha exacta lleva la cuenta regresiva en vivo.
+    var proximo = null;
+    eventos.forEach(function (e, i) {
+      var st = F.estado(e, ahora);
+      if ((st.tipo === "futuro" || st.tipo === "manana" || st.tipo === "hoy") && st.objetivo > ahora &&
+          (!proximo || st.objetivo < proximo.objetivo)) proximo = { i: i, objetivo: st.objetivo };
+    });
+    return '<ol class="eventos">' + eventos.map(function (e, i) {
+      var st = F.estado(e, ahora);
+      var caja = F.caja(e);
+      var fechaTxt = F.texto(e);
+      var meta = [fechaTxt, e.hora, e.lugar].filter(Boolean).map(t).join(" · ");
+      var insignia = "";
+      if (st.tipo === "futuro") insignia = '<span class="cuenta cuenta--futuro">⏳ Faltan ' + st.dias + " días</span>";
+      else if (st.tipo === "manana") insignia = '<span class="cuenta cuenta--pronto">⏳ ¡Es mañana!</span>';
+      else if (st.tipo === "hoy") insignia = '<span class="cuenta cuenta--hoy">🎉 ¡Es hoy!</span>';
+      else if (st.tipo === "encurso") insignia = '<span class="cuenta cuenta--hoy">🎉 ¡En curso! · ' +
+        (st.ultimo ? "Hoy es el último día" : "Termina el " + t(F.corto(st.fin))) + "</span>";
+      else if (st.tipo === "estemes") insignia = '<span class="cuenta cuenta--pronto">📅 ¡Este mes!</span>';
+      else if (st.tipo === "pasado") insignia = '<span class="cuenta cuenta--pasado">Finalizado</span>';
+      var enVivo = proximo && proximo.i === i
+        ? '<div class="reloj" data-objetivo="' + proximo.objetivo.getTime() + '" aria-label="Cuenta regresiva">' +
+          ["días", "horas", "min", "seg"].map(function (u) {
+            return '<div class="reloj__caja"><span class="reloj__num">--</span><span class="reloj__u">' + u + "</span></div>";
+          }).join("") + "</div>"
+        : "";
+      return '<li class="evento' + (st.tipo === "pasado" ? " evento--pasado" : "") + (enVivo ? " evento--proximo" : "") + '">' +
+        '<div class="evento__fecha' + (caja.largo ? " evento__fecha--largo" : "") + '">' +
+        '<span class="evento__grande">' + t(caja.grande) + '</span><span class="evento__chico">' + t(caja.chico) + "</span></div>" +
+        '<div class="evento__info">' +
+        (enVivo ? '<p class="evento__etiqueta">Próximo evento</p>' : "") +
+        "<h3>" + t(e.nombre) + "</h3>" +
+        (meta ? '<p class="evento__meta">' + meta + "</p>" : "") +
+        (e.descripcion ? "<p>" + t(e.descripcion) + "</p>" : "") +
+        (insignia && !enVivo ? '<p class="evento__cuenta">' + insignia + "</p>" : "") +
+        enVivo +
+        "</div></li>";
+    }).join("") + "</ol>";
+  }
+
+  var relojTimer = null;
+  function iniciarCuentaRegresiva() {
+    clearInterval(relojTimer);
+    var reloj = document.querySelector(".reloj[data-objetivo]");
+    if (!reloj) return;
+    var objetivo = Number(reloj.getAttribute("data-objetivo"));
+    var nums = reloj.querySelectorAll(".reloj__num");
+    var tic = function () {
+      var falta = Math.max(0, objetivo - Date.now());
+      var s = Math.floor(falta / 1000);
+      var valores = [Math.floor(s / 86400), Math.floor(s % 86400 / 3600), Math.floor(s % 3600 / 60), s % 60];
+      valores.forEach(function (v, i) { nums[i].textContent = i === 0 ? String(v) : (v < 10 ? "0" : "") + v; });
+      if (falta <= 0) clearInterval(relojTimer);
+    };
+    tic();
+    relojTimer = setInterval(tic, 1000);
   }
 
   // ---------- Instagram ----------
